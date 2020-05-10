@@ -52,6 +52,7 @@ packages/
 *.a
 *.bc
 *.so
+*.obj
 
 # Ignore all examples files
 examples/*
