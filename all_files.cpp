@@ -1,4 +1,9 @@
 #include "main.cpp"
+#include "texture.cpp"
+#include "renderer.cpp"
+#include "system.cpp"
+#include "common.cpp"
+
 #include "imgui/imgui.cpp"
 #include "imgui/imgui_widgets.cpp"
 #include "imgui/imgui_draw.cpp"
