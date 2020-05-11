@@ -6,6 +6,7 @@
 
 #define SDL_MAIN_HANDLED
 #include "include/sdl2/sdl.h"
+#include "include/sdl2/SDL_image.h"
 
 #define GLEW_STATIC
 #include "include/glew/glew.h"
