@@ -15,6 +15,7 @@ extern float delta_time;
 
 void sys_init();
 void sys_shutdown();
+void sys_update();
 void sys_error(const char *text, ...);
 
 #endif

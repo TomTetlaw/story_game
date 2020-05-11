@@ -40,10 +40,23 @@ void sys_init() {
     ImGui_ImplSDL2_InitForOpenGL(sys.window, sys.context);
     ImGui_ImplOpenGL3_Init();
 
+    hotload_init();
     renderer_init();
 }
 
+internal float last_time = 0.0f;
+void sys_update() {
+    float current_time = SDL_GetTicks() / 1000.0f;
+    delta_time = current_time - last_time;
+    now = current_time;
+    last_time = current_time;
+
+    hotload_check_files_non_blocking();
+}
+
 void sys_shutdown() {
+    hotload_shutdown();
+
     unload_textures();
     renderer_shutdown();
 

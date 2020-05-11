@@ -28,5 +28,6 @@ typedef unsigned int uint;
 #include "system.h"
 #include "texture.h"
 #include "renderer.h"
+#include "hotload.h"
 
 #endif

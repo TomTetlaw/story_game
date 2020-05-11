@@ -30,6 +30,7 @@ int add_verts(Vertex *verts, int num_verts, uint *indices, int num_indices);
 struct Render_Texture {
     Texture *texture = nullptr;
     Vec2 position;
+    Vec2 size;
 };
 
 void render_texture(Render_Texture *rt);

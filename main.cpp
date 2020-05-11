@@ -5,7 +5,7 @@ int main() {
     sys_init();
 
     Texture *texture = load_texture("data/textures/test.png");
-    Render_Texture rt = { texture, Vec2(100, 100) };
+    Render_Texture rt = { texture, Vec2(300, 300), Vec2(300, 300) };
 
     bool running = true;
     SDL_Event event;
@@ -16,6 +16,8 @@ int main() {
                 break;
             }
         } else {
+            sys_update();
+
             renderer_begin_frame();
             render_texture(&rt);
             renderer_end_frame();

@@ -54,10 +54,90 @@ void check_required_extensions() {
     }
 }
 
+unsigned int load_shader(const char *filename, unsigned int type) {
+	unsigned int object;
+	GLint compiled = 0;
+
+	Load_File_Result file = load_file(filename);
+	object = glCreateShader(type);
+	glShaderSource(object, 1, &file.data, &file.length);
+	glCompileShader(object);
+	delete[] file.data;
+
+	glGetShaderiv(object, GL_COMPILE_STATUS, &compiled);
+	if (!compiled) {
+		printf("Failed to compile shader %s", filename);
+
+		GLint blen = 0;	
+		GLsizei slen = 0;
+		glGetShaderiv(object, GL_INFO_LOG_LENGTH , &blen);       
+		if (blen > 1) {
+ 			char *compiler_log = new char[blen];
+ 			glGetShaderInfoLog(object, blen, &slen, compiler_log);
+ 			printf("Shader info log: %s", compiler_log);
+			delete[] compiler_log;
+		}
+
+		glDeleteShader(object);
+		return 0;
+	}
+
+	return object;
+}
+
+void load_program(Program *program) {
+	program->vertex_object = load_shader(program->vertex_filename, GL_VERTEX_SHADER);
+	program->frag_object = load_shader(program->frag_filename, GL_FRAGMENT_SHADER);
+	program->program_object = glCreateProgram();
+	glAttachShader(program->program_object, program->vertex_object);
+	glAttachShader(program->program_object, program->frag_object);
+	glLinkProgram(program->program_object);
+	
+	GLint linked;
+	glGetProgramiv(program->program_object, GL_LINK_STATUS, &linked);
+	if(!linked) {
+		printf("Failed to link program");
+
+		GLint blen = 0;	
+		GLsizei slen = 0;
+		glGetProgramiv(program->program_object, GL_INFO_LOG_LENGTH, &blen);       
+		if (blen > 1) {
+ 			char *compiler_log = new char[blen];
+ 			glGetProgramInfoLog(program->program_object, blen, &slen, compiler_log);
+ 			printf("Program info log: %s", compiler_log);
+			delete[] compiler_log;
+		}
+
+		glDeleteProgram(program->program_object);
+	}
+}
+
+void hotload_vertex_callback(const char *filename, void *data) {
+	Program *program = (Program *)data;
+	
+	glDetachShader(program->program_object, program->vertex_object);
+	glDeleteShader(program->vertex_object);
+	program->vertex_object = load_shader(program->vertex_filename, GL_VERTEX_SHADER);
+	glAttachShader(program->program_object, program->vertex_object);
+	glLinkProgram(program->program_object);
+}
+
+void hotload_frag_callback(const char *filename, void *data) {
+	Program *program = (Program *)data;
+	
+	glDetachShader(program->program_object, program->frag_object);
+	glDeleteShader(program->frag_object);
+	program->frag_object = load_shader(program->frag_filename, GL_FRAGMENT_SHADER);
+	glAttachShader(program->program_object, program->frag_object);
+	glLinkProgram(program->program_object);
+}
+
 void setup_program(Program *program, const char *vertex_filename, const char *frag_filename) {
 	program->vertex_filename = vertex_filename;
 	program->frag_filename = frag_filename;
 	load_program(program);
+    hotload_add_file(program->vertex_filename, program, hotload_vertex_callback);
+	hotload_add_file(program->frag_filename, program, hotload_frag_callback);	
 }
 
 void renderer_init() {
@@ -142,7 +222,8 @@ void renderer_end_frame() {
             glActiveTexture(GL_TEXTURE0 + 0);
 			glBindTexture(GL_TEXTURE_2D, commands[i].texture.texture->api_object);
 			glDrawRangeElements(GL_TRIANGLES, commands[i].texture.first_index, commands[i].texture.first_index + 6, 6, GL_UNSIGNED_INT, nullptr);
-			glBindTexture(GL_TEXTURE_2D, 0);
+            glActiveTexture(GL_TEXTURE0 + 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	}
 
@@ -152,64 +233,6 @@ void renderer_end_frame() {
 
     SDL_GL_SwapWindow(sys.window);
     glUseProgram(0);
-}
-
-unsigned int load_shader(const char *filename, unsigned int type) {
-	unsigned int object;
-	GLint compiled = 0;
-
-	Load_File_Result file = load_file(filename);
-	object = glCreateShader(type);
-	glShaderSource(object, 1, &file.data, &file.length);
-	glCompileShader(object);
-	delete[] file.data;
-
-	glGetShaderiv(object, GL_COMPILE_STATUS, &compiled);
-	if (!compiled) {
-		printf("Failed to compile shader %s", filename);
-
-		GLint blen = 0;	
-		GLsizei slen = 0;
-		glGetShaderiv(object, GL_INFO_LOG_LENGTH , &blen);       
-		if (blen > 1) {
- 			char *compiler_log = new char[blen];
- 			glGetShaderInfoLog(object, blen, &slen, compiler_log);
- 			printf("Shader info log: %s", compiler_log);
-			delete[] compiler_log;
-		}
-
-		glDeleteShader(object);
-		return 0;
-	}
-
-	return object;
-}
-
-void load_program(Program *program) {
-	program->vertex_object = load_shader(program->vertex_filename, GL_VERTEX_SHADER);
-	program->frag_object = load_shader(program->frag_filename, GL_FRAGMENT_SHADER);
-	program->program_object = glCreateProgram();
-	glAttachShader(program->program_object, program->vertex_object);
-	glAttachShader(program->program_object, program->frag_object);
-	glLinkProgram(program->program_object);
-	
-	GLint linked;
-	glGetProgramiv(program->program_object, GL_LINK_STATUS, &linked);
-	if(!linked) {
-		printf("Failed to link program");
-
-		GLint blen = 0;	
-		GLsizei slen = 0;
-		glGetProgramiv(program->program_object, GL_INFO_LOG_LENGTH, &blen);       
-		if (blen > 1) {
- 			char *compiler_log = new char[blen];
- 			glGetProgramInfoLog(program->program_object, blen, &slen, compiler_log);
- 			printf("Program info log: %s", compiler_log);
-			delete[] compiler_log;
-		}
-
-		glDeleteProgram(program->program_object);
-	}
 }
 
 void set_program(Program *program) { current_program = program; }
@@ -229,10 +252,15 @@ int add_verts(Vertex *_vertices, int num_vertices, uint *_indices, int num_indic
 }
 
 void render_texture(Render_Texture *rt) {
-	float x0 = rt->position.x - rt->texture->width / 2;
-	float y0 = rt->position.y - rt->texture->height / 2;
-	float x1 = rt->position.x + rt->texture->width / 2;
-	float y1 = rt->position.y + rt->texture->height / 2;
+    float width = rt->texture->width;
+    float height = rt->texture->height;
+    if(rt->size.x != -1) width = rt->size.x;
+    if(rt->size.y != -1) height = rt->size.y;
+
+	float x0 = rt->position.x - width / 2;
+	float y0 = rt->position.y - height / 2;
+	float x1 = rt->position.x + width / 2;
+	float y1 = rt->position.y + height / 2;
 
 	Vertex new_verts[4];
 	new_verts[0].position = Vec3(x0, y0, 0);
