@@ -1,58 +1,38 @@
-#include "include/raylib/raylib.h"
-#include "array.h"
-#include <string.h>
-#include <stdio.h>
-#define internal static
-
-struct My_Texture {
-    Texture2D raylib_texture;
-    const char *file_name = nullptr;
-};
-
-internal Array<My_Texture> textures;
-
-internal int load_texture(const char *file_name) {
-    for(int i = 0; i < textures.num; i++) 
-        if(!strcmp(textures[i].file_name, file_name)) return i;
-
-    Texture2D raylib_texture = LoadTexture(file_name);
-    if(raylib_texture.id == 0) {
-        return -1;
-    }
-
-    textures.append({raylib_texture, file_name});
-    return textures.num - 1;
-}
-
-void unload_textures() {
-    for(int i = 0; i < textures.num; i++) UnloadTexture(textures[i].raylib_texture);
-    textures.num = 0;
-}
-
-Texture2D *get_texture(int texture) {
-    if(texture < 0 || texture >= textures.num) return nullptr;
-    return &textures[texture].raylib_texture;
-}
+#define IMGUI_IMPLIMENTATION
+#include "include.h"
 
 int main() {
-    InitWindow(1366, 768, "Game");
-    SetTargetFPS(120);
+    SDL_Init(SDL_INIT_EVERYTHING);
 
-    int t = load_texture("data/textures/test.png");
+    SDL_Window *window = SDL_CreateWindow("Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1366, 768, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
 
-    while(!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(BLACK);
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GLContext context = SDL_GL_CreateContext(window);
 
-        char text[1024] = {};
-        sprintf_s(text, 1024, "%d", GetFPS());
-        DrawText(text, 10, 10, 16, WHITE);
-        DrawTexture(*get_texture(t), 100, 100, WHITE);
+    ImGui_ImplSDL2_InitForOpenGL(window, context);
+    ImGui_ImplOpenGL3_Init();
 
-        EndDrawing();
+    bool running = true;
+    SDL_Event event;
+    while(running) {
+        if(SDL_PollEvent(&event)) {
+            if(event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
+                running = false;
+                break;
+            }
+        } else {
+        }
     }
 
-    unload_textures();
-    CloseWindow();
+    SDL_Quit();
     return 0;
 }
