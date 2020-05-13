@@ -4,8 +4,9 @@
 int main() {
     sys_init();
 
-    Texture *texture = load_texture("data/textures/test.png");
-    Render_Texture rt = { texture, Vec2(300, 300), Vec2(300, 300) };
+    Entity *test_entity = create_entity();
+    set_entity_texture(test_entity, "data/textures/test.png");
+    test_entity->position = Vec2(100, 100);
 
     bool running = true;
     SDL_Event event;
@@ -18,9 +19,14 @@ int main() {
         } else {
             sys_update();
 
+            update_entities();
+            if(frame_num == 1000) remove_entity(test_entity);
+
             renderer_begin_frame();
-            render_texture(&rt);
+            render_entities();
             renderer_end_frame();
+            
+            frame_num++;
         }
     }
 

@@ -252,8 +252,8 @@ int add_verts(Vertex *_vertices, int num_vertices, uint *_indices, int num_indic
 }
 
 void render_texture(Render_Texture *rt) {
-    float width = rt->texture->width;
-    float height = rt->texture->height;
+    float width = rt->texture->size.x;
+    float height = rt->texture->size.y;
     if(rt->size.x != -1) width = rt->size.x;
     if(rt->size.y != -1) height = rt->size.y;
 

@@ -12,6 +12,7 @@ extern int window_width;
 extern int window_height;
 extern float now;
 extern float delta_time;
+extern int frame_num;
 
 void sys_init();
 void sys_shutdown();

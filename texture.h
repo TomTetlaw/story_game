@@ -2,8 +2,7 @@
 #define __TEXTURE_H__
 
 struct Texture {
-    int width = 0;
-    int height = 0;
+    Vec2 size;
     uint api_object = 0;
     const char *file_name = nullptr;
 };

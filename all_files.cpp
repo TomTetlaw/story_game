@@ -4,6 +4,7 @@
 #include "system.cpp"
 #include "common.cpp"
 #include "win_hotload.cpp"
+#include "entity.cpp"
 
 #include "imgui/imgui.cpp"
 #include "imgui/imgui_widgets.cpp"

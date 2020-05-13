@@ -16,7 +16,6 @@ struct Program {
 	unsigned int program_object = 0;
 };
 
-
 void renderer_init();
 void renderer_shutdown();
 void renderer_begin_frame();

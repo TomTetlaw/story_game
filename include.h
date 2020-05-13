@@ -29,5 +29,6 @@ typedef unsigned int uint;
 #include "texture.h"
 #include "renderer.h"
 #include "hotload.h"
+#include "entity.h"
 
 #endif

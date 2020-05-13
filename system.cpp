@@ -5,7 +5,7 @@ int window_width = 0;
 int window_height = 0;
 float now = 0.0f;
 float delta_time = 0.0f;
-//@todo: fill these in
+int frame_num = 0;
 
 void sys_init() {
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
