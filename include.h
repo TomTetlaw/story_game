@@ -30,5 +30,7 @@ typedef unsigned int uint;
 #include "renderer.h"
 #include "hotload.h"
 #include "entity.h"
+#include "editor.h"
+#include "input.h"
 
 #endif
