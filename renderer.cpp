@@ -267,12 +267,12 @@ int add_verts(Vertex *_vertices, int num_vertices, uint *_indices, int num_indic
 	index_list.ensure_size(index_list.num + num_indices);
 
 	for(int i = 0; i < num_indices; i++) {
-		index_list.append(_indices[i]);
+		index_list.append(_indices[i]); // @todo: make this use frame allocator
 	}
 
 	int first_vertex = vertex_list.num;
 	for(int i = 0; i < num_vertices; i++) {
-		vertex_list.append(_vertices[i]);
+		vertex_list.append(_vertices[i]); // @todo: make this use frame allocator
 	}
 	return first_vertex;
 }
@@ -330,24 +330,16 @@ void render_box(Vec2 position, Vec2 size, Vec4 colour) {
 	verts[2].colour = colour;
 	verts[3].colour = colour;
 
-	unsigned int indices[8];
-	indices[0] = 0;
-	indices[1] = 1;
-	indices[2] = 1;
-	indices[3] = 2;
-	indices[4] = 2;
-	indices[5] = 3;
-	indices[6] = 3;
-	indices[7] = 0;
+	unsigned int indices[4] = { 0, 1, 2, 3 };
 
-	int first_vertex = add_verts(verts, 4, indices, 8);
+	int first_vertex = add_verts(verts, 4, indices, 4);
 
 	Render_Command rc;
 	rc.type = RC_SOME_VERTS;
-	rc.verts.mode = GL_LINE_STRIP;
+	rc.verts.mode = GL_POINTS;
 	rc.verts.fill = false;
 	rc.verts.first_vertex = first_vertex;
-	rc.verts.num_indices = 8;
+	rc.verts.num_indices = 4;
 	commands.append(rc); // @todo: make this use frame allocator
 }
 
