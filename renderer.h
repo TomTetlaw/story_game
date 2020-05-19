@@ -34,4 +34,6 @@ struct Render_Texture {
 
 void render_texture(Render_Texture *rt);
 
+void render_box(Vec2 position, Vec2 size, Vec4 colour);
+
 #endif

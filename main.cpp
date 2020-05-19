@@ -4,9 +4,12 @@
 int main() {
     sys_init();
 
-    Entity *test_entity = create_entity();
-    set_entity_texture(test_entity, "data/textures/test.png");
-    test_entity->position = Vec2(100, 100);
+    Entity *entity = create_entity();
+    add_texture_component(entity);
+    add_physics_component(entity);
+    entity->physics->position = Vec2(100, 100);
+    entity->physics->size = Vec2(32, 32);
+    entity->texture->texture = load_texture("data/textures/test.png");
 
     bool running = true;
     SDL_Event event;
@@ -20,7 +23,7 @@ int main() {
             if(!editor_gui_handled(&event)) {
                 if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
                     bool down = (event.type == SDL_MOUSEBUTTONDOWN);
-                    input_mouse(event.button.x, event.button.y, event.button.button, down);
+                    input_mouse(Vec2(event.button.x, event.button.y), event.button.button, down);
                 } else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
                     int mods = 0;
                     if(event.key.keysym.mod | KMOD_CTRL) mods |= KEY_MOD_CTRL;
@@ -32,11 +35,12 @@ int main() {
             }
         } else {
             sys_update();
-
-            update_entities();
+            entity_update();
+            editor_update();
 
             renderer_begin_frame();
-            render_entities();
+            entity_render();
+            editor_render();
             renderer_end_frame();
             
             frame_num++;

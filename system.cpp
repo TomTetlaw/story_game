@@ -6,6 +6,7 @@ int window_height = 0;
 float now = 0.0f;
 float delta_time = 0.0f;
 int frame_num = 0;
+Vec2 mouse_position;
 
 void sys_init() {
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -42,6 +43,7 @@ void sys_init() {
 
     hotload_init();
     renderer_init();
+    editor_init();
 }
 
 internal float last_time = 0.0f;
@@ -52,9 +54,14 @@ void sys_update() {
     last_time = current_time;
 
     hotload_check_files_non_blocking();
+
+    int x = 0, y = 0;
+    SDL_GetMouseState(&x, &y);
+    mouse_position = Vec2(x, y);
 }
 
 void sys_shutdown() {
+    editor_shutdown();
     hotload_shutdown();
 
     unload_textures();
@@ -70,6 +77,8 @@ void sys_shutdown() {
     SDL_GL_DeleteContext(sys.context);
     SDL_DestroyWindow(sys.window);
     SDL_Quit();
+    
+    exit(0);
 }
 
 void sys_error(const char *text, ...) {

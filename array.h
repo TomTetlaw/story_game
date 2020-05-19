@@ -22,12 +22,11 @@ struct Array {
 
 	T &operator[](int index) { return data[index]; }
 	T &first() { return data[0]; }
+
+	inline int _num() { return num; } // used by the For macro
 };
 
-// macro so that you don't have to type for(int i = 0; i < x.num; i++) every time
-// generally you want to do auto it = x[it_index] in the first line of the loop
-// to get the reference to the element
-#define For(x) for(int it_index = 0; it_index < x.num; it_index++)
+#define For(x) { if(x._num() > 0) { auto it = x[0]; for(int it_index = 0; it_index < x._num(); it_index++, it = x[it_index])
 
 template<typename T>
 Array<T>::~Array() {
@@ -110,7 +109,8 @@ public:
     Array<T> elements;
     int last_freed_index = 0;
 	int max_index = 0;
-	
+
+	inline int _num() { return max_index; } // used by the For macro
 
 	inline void init() {
 		elements.ensure_size(size);

@@ -1,7 +1,7 @@
 #include "include.h"
 
-bool input_mouse(int x, int y, uint buttons, bool down) {
-    if(editor_mouse_press(x, y, buttons, down)) return true;
+bool input_mouse(Vec2 position, int button, bool down) {
+    if(editor_mouse_press(position, button, down)) return true;
     return false;
 }
 

@@ -7,7 +7,7 @@ enum Key_Mods {
     KEY_MOD_SHIFT,
 };
 
-bool input_mouse(int x, int y, uint buttons, bool down);
+bool input_mouse(Vec2 position, int button, bool down);
 bool input_key(int key, bool down, int mods);
 
 #endif

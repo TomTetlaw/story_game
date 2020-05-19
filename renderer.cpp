@@ -5,10 +5,18 @@
 
 struct RC_Texture {
 	Texture *texture = nullptr;
-	int first_index = 0;
+	int first_vertex = 0;
+};
+
+struct RC_Some_Verts {
+	int first_vertex = 0;
+	int num_indices = 0;
+	uint mode = 0;
+	bool fill = false;
 };
 
 enum Render_Command_Type {
+	RC_SOME_VERTS,
 	RC_TEXTURE,
 };
 
@@ -19,6 +27,7 @@ struct Render_Command {
 
 	union {
 		RC_Texture texture;
+		RC_Some_Verts verts;
 	};
 };
 
@@ -27,14 +36,15 @@ internal unsigned int index_buffer = 0;
 internal unsigned int vertex_array = 0;
 
 internal Program basic_textured;
+internal Program basic;
 internal Program *current_program = nullptr;
 
 internal Mat4 projection_matrix;
 internal Mat4 transformation_matrix;
 internal Mat4 worldview_matrix;
 
-internal Array<Vertex> verts;
-internal Array<unsigned int> indices;
+internal Array<Vertex> vertex_list;
+internal Array<uint> index_list;
 internal Array<Render_Command> commands;
 
 void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
@@ -179,7 +189,7 @@ void renderer_init() {
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)offsetof(Vertex, normal));
 
     setup_program(&basic_textured, "data/shaders/basic_textured.vert", "data/shaders/basic_textured.frag");
-    set_program(&basic_textured);
+	setup_program(&basic, "data/shaders/basic.vert", "data/shaders/basic.frag");
 }
 
 void renderer_shutdown() {
@@ -191,64 +201,80 @@ void renderer_shutdown() {
 void renderer_begin_frame() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	if(current_program) {
-		glUseProgram(current_program->program_object);
-	}
 }
 
 void renderer_end_frame() {
-    int sampler_loc = glGetUniformLocation(current_program->program_object, "diffuse_texture");
-	glUniform1i(sampler_loc, 0);
+	assert(vertex_list.num < MAX_VERTICIES);
+	assert(index_list.num < MAX_INDICES);
+	glNamedBufferSubData(vertex_buffer, 0, vertex_list.num * sizeof(Vertex), vertex_list.data);
+	glNamedBufferSubData(index_buffer, 0, index_list.num * sizeof(uint), index_list.data);
 
-	assert(verts.num < MAX_VERTICIES);
-	assert(indices.num < MAX_INDICES);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, verts.num * sizeof(Vertex), verts.data);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.num * sizeof(unsigned int), indices.data);
-
-    int now_loc = glGetUniformLocation(current_program->program_object, "now");
-	glUniform1f(now_loc, now);
-
-    int projection_matrix_loc = glGetUniformLocation(current_program->program_object, "projection_matrix");
-    int worldview_matrix_loc = glGetUniformLocation(current_program->program_object, "worldview_matrix");
-	for(int i = 0; i < commands.num; i++) {
-		if(commands[i].type == RC_TEXTURE) {
-			transformation_matrix = create_identity_matrix();
-			projection_matrix = create_ortho_matrix(0, window_width, window_height, 0);
-			worldview_matrix = create_identity_matrix();
-			glUniformMatrix4fv(projection_matrix_loc, 1, GL_FALSE, projection_matrix.e);
-			glUniformMatrix4fv(worldview_matrix_loc, 1, GL_FALSE, worldview_matrix.e);
-
-            glActiveTexture(GL_TEXTURE0 + 0);
-			glBindTexture(GL_TEXTURE_2D, commands[i].texture.texture->api_object);
-			glDrawRangeElements(GL_TRIANGLES, commands[i].texture.first_index, commands[i].texture.first_index + 6, 6, GL_UNSIGNED_INT, nullptr);
-            glActiveTexture(GL_TEXTURE0 + 0);
+	For(commands) {
+		switch(it.type) {
+		case RC_TEXTURE:
+			set_program(&basic_textured);
+			glBindTexture(GL_TEXTURE_2D, it.texture.texture->api_object);
+			glDrawElementsBaseVertex(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, it.texture.first_vertex);
             glBindTexture(GL_TEXTURE_2D, 0);
+			break;
+		case RC_SOME_VERTS:
+			set_program(&basic);
+			if(it.verts.fill) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElementsBaseVertex(it.verts.mode, it.verts.num_indices, GL_UNSIGNED_INT, nullptr, it.verts.first_vertex);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			break;
 		}
-	}
+	}}}
 
 	commands.num = 0;
-	verts.num = 0;
-	indices.num = 0;
+	vertex_list.num = 0;
+	index_list.num = 0;
 
     SDL_GL_SwapWindow(sys.window);
     glUseProgram(0);
 }
 
-void set_program(Program *program) { current_program = program; }
+void set_program(Program *program) { 
+	current_program = program;
+
+	if(!current_program) {
+		return;
+	}
+
+	glUseProgram(current_program->program_object);
+
+	projection_matrix = create_ortho_matrix(0, window_width, window_height, 0);
+	worldview_matrix = create_identity_matrix();
+
+    int projection_matrix_loc = glGetUniformLocation(current_program->program_object, "projection_matrix");
+    int worldview_matrix_loc = glGetUniformLocation(current_program->program_object, "worldview_matrix");
+
+	glUniformMatrix4fv(projection_matrix_loc, 1, GL_FALSE, projection_matrix.e);
+	glUniformMatrix4fv(worldview_matrix_loc, 1, GL_FALSE, worldview_matrix.e);
+
+	int now_loc = glGetUniformLocation(current_program->program_object, "now");
+	glUniform1f(now_loc, now);
+
+	if(current_program == &basic_textured) {
+		int sampler_loc = glGetUniformLocation(current_program->program_object, "diffuse_texture");
+		glUniform1i(sampler_loc, 0);
+	}
+}
 
 int add_verts(Vertex *_vertices, int num_vertices, uint *_indices, int num_indices) {
-	verts.ensure_size(verts.num + num_vertices);
-	indices.ensure_size(indices.num + num_indices);
+	vertex_list.ensure_size(vertex_list.num + num_vertices);
+	index_list.ensure_size(index_list.num + num_indices);
 
-	int first_index = indices.num;
 	for(int i = 0; i < num_indices; i++) {
-		indices.append(_indices[i]);
+		index_list.append(_indices[i]);
 	}
+
+	int first_vertex = vertex_list.num;
 	for(int i = 0; i < num_vertices; i++) {
-		verts.append(_vertices[i]);
+		vertex_list.append(_vertices[i]);
 	}
-	return first_index;
+	return first_vertex;
 }
 
 void render_texture(Render_Texture *rt) {
@@ -262,35 +288,67 @@ void render_texture(Render_Texture *rt) {
 	float x1 = rt->position.x + width / 2;
 	float y1 = rt->position.y + height / 2;
 
-	Vertex new_verts[4];
-	new_verts[0].position = Vec3(x0, y0, 0);
-	new_verts[1].position = Vec3(x0, y1, 0);
-	new_verts[2].position = Vec3(x1, y1, 0);
-	new_verts[3].position = Vec3(y1, y0, 0);
-	new_verts[0].uv = Vec2(0, 0);
-	new_verts[1].uv = Vec2(0, 1);
-	new_verts[2].uv = Vec2(1, 1);
-	new_verts[3].uv = Vec2(1, 0);
-	new_verts[0].colour = Vec4(1, 1, 1, 1);
-	new_verts[1].colour = Vec4(1, 1, 1, 1);
-	new_verts[2].colour = Vec4(1, 1, 1, 1);
-	new_verts[3].colour = Vec4(1, 1, 1, 1);
+	Vertex verts[4];
+	verts[0].position = Vec3(x0, y0, 0);
+	verts[1].position = Vec3(x0, y1, 0);
+	verts[2].position = Vec3(x1, y1, 0);
+	verts[3].position = Vec3(x1, y0, 0);
+	verts[0].uv = Vec2(0, 0);
+	verts[1].uv = Vec2(0, 1);
+	verts[2].uv = Vec2(1, 1);
+	verts[3].uv = Vec2(1, 0);
+	verts[0].colour = Vec4(1, 1, 1, 1);
+	verts[1].colour = Vec4(1, 1, 1, 1);
+	verts[2].colour = Vec4(1, 1, 1, 1);
+	verts[3].colour = Vec4(1, 1, 1, 1);
 
-	unsigned int new_indicies[6];
-	new_indicies[0] = 0;
-	new_indicies[1] = 1;
-	new_indicies[2] = 2;
-	new_indicies[3] = 0;
-	new_indicies[4] = 2;
-	new_indicies[5] = 3;
+	unsigned int indices[6];
+	indices[0] = 0;
+	indices[1] = 1;
+	indices[2] = 2;
+	indices[3] = 0;
+	indices[4] = 2;
+	indices[5] = 3;
 
-	int first_index = add_verts(new_verts, 4, new_indicies, 6);
+	int first_vertex = add_verts(verts, 4, indices, 6);
 
 	Render_Command rc;
 	rc.type = RC_TEXTURE;
-	rc.texture.first_index = first_index;
+	rc.texture.first_vertex = first_vertex;
 	rc.texture.texture = rt->texture;
-	commands.append(rc);    
+	commands.append(rc); // @todo: make this use frame allocator
+}
+
+void render_box(Vec2 position, Vec2 size, Vec4 colour) {
+	Vertex verts[4];
+	verts[0].position = Vec3(position.x, position.y, 0);
+	verts[1].position = Vec3(position.x, position.y + size.y, 0);
+	verts[2].position = Vec3(position.x + size.x, position.y + size.y, 0);
+	verts[3].position = Vec3(position.x + size.x, position.y, 0);
+	verts[0].colour = colour;
+	verts[1].colour = colour;
+	verts[2].colour = colour;
+	verts[3].colour = colour;
+
+	unsigned int indices[8];
+	indices[0] = 0;
+	indices[1] = 1;
+	indices[2] = 1;
+	indices[3] = 2;
+	indices[4] = 2;
+	indices[5] = 3;
+	indices[6] = 3;
+	indices[7] = 0;
+
+	int first_vertex = add_verts(verts, 4, indices, 8);
+
+	Render_Command rc;
+	rc.type = RC_SOME_VERTS;
+	rc.verts.mode = GL_LINE_STRIP;
+	rc.verts.fill = false;
+	rc.verts.first_vertex = first_vertex;
+	rc.verts.num_indices = 8;
+	commands.append(rc); // @todo: make this use frame allocator
 }
 
 void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {   

@@ -13,6 +13,7 @@ extern int window_height;
 extern float now;
 extern float delta_time;
 extern int frame_num;
+extern Vec2 mouse_position;
 
 void sys_init();
 void sys_shutdown();

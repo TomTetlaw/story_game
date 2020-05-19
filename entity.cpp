@@ -1,44 +1,56 @@
 #include "include.h"
 
-Contiguous_Array<Entity, 10000> entities;
+Entity_Manager entity_manager;
 
-void update_entity(Entity *entity) {
-    entity->position = entity->position + (entity->velocity * delta_time);
-}
-
-void render_entity(Entity *entity) {
-    Render_Texture rt;
-    rt.position = entity->position;
-    rt.size = entity->size;
-    rt.texture = entity->texture;
-    render_texture(&rt);
+Entity *create_entity() {
+    return entity_manager.entities.alloc();
 }
 
 void remove_entity(Entity *entity) {
-    entities.remove(entity);
+    entity_manager.physics_components.remove(entity->physics);
+    entity_manager.texture_components.remove(entity->texture);
+    entity_manager.entities.remove(entity);
 }
 
-Entity *create_entity() {
-    return entities.alloc();
+void add_physics_component(Entity *entity) {
+    entity->physics = entity_manager.physics_components.alloc();
 }
 
-void set_entity_texture(Entity *entity, const char *file_name) {
-    entity->texture = load_texture(file_name);
-    if(entity->texture) {
-        entity->size = entity->texture->size;
-    }
+void add_texture_component(Entity *entity) {
+    entity->texture = entity_manager.texture_components.alloc();
 }
 
-void update_entities() {
-    for(int i = 0; i < entities.max_index; i++) {
-        if(!entities[i]) continue;
-        update_entity(entities[i]);
-    }
+void entity_init() {
+    entity_manager.physics_components.init();
+    entity_manager.texture_components.init();
+    entity_manager.entities.init();
 }
 
-void render_entities() {
-    for(int i = 0; i < entities.max_index; i++) {
-        if(!entities[i]) continue;
-        render_entity(entities[i]);
-    }
+void entity_shutdown() {
+}
+
+void entity_update() {
+    For(entity_manager.physics_components) {
+        if(!it) continue;
+        it->position = it->position + (it->velocity * delta_time);
+    }}}
+
+    For(entity_manager.entities) {
+        if(!it) continue;
+        
+        it->texture->position = it->physics->position;
+        it->texture->size = it->physics->size;
+    }}}
+}
+
+void entity_render() {
+    For(entity_manager.texture_components) {
+        if(!it) continue;
+        
+        Render_Texture rt;
+        rt.position = it->position;
+        rt.size = it->size;
+        rt.texture = it->texture;
+        render_texture(&rt);
+    }}}
 }

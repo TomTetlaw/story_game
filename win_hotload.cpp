@@ -14,7 +14,7 @@ void hotload_shutdown() {
 	For(files) {
 		auto it = files[it_index];
 		delete it;
-	}
+	}}}
 }
 
 void hotload_add_file(const char *filename, void *data, Hotload_Callback callback) {
@@ -61,6 +61,6 @@ void hotload_check_files_non_blocking() {
 
 				FindNextChangeNotification(dir_change_notification);
 			}
-		}
+		}}}
 	}
 }
