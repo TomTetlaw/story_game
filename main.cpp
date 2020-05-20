@@ -4,6 +4,9 @@
 int main() {
     sys_init();
 
+    Config_File file;
+    load_config_file(&file, "data/config/test_config.txt");
+    
     Entity *entity = create_entity();
     add_texture_component(entity);
     add_physics_component(entity);

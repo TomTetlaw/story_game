@@ -26,11 +26,14 @@ void sys_init() {
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	sys.context = SDL_GL_CreateContext(sys.window);
     if(!sys.context) sys_error("Failed to create OpenGL context: %s.", SDL_GetError());
+
+    const unsigned char *version = glGetString(GL_VERSION);
+    printf("OpenGL Version: %s\n", version);
 
     GLenum result = glewInit();
     if(result != GLEW_OK) sys_error("Failed to initialize glew: %s.", glewGetErrorString(result));

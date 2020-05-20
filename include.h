@@ -22,9 +22,11 @@
 #define internal static
 typedef unsigned int uint;
 
+#include "allocator.h"
 #include "array.h"
 #include "mathlib.h"
 #include "common.h"
+#include "config.h"
 #include "system.h"
 #include "texture.h"
 #include "renderer.h"

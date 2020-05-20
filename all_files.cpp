@@ -7,6 +7,7 @@
 #include "entity.cpp"
 #include "editor.cpp"
 #include "input.cpp"
+#include "config.cpp"
 
 #include "imgui/imgui.cpp"
 #include "imgui/imgui_widgets.cpp"
