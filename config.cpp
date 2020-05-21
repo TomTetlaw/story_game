@@ -11,50 +11,94 @@ enum Token_Type {
 
 struct Token {
     Token_Type type;
-    char single_char = 0;
-    char name[64] = {};
-    char value[64] = {};
-    char string[64] = {};
+
+    union {
+        char name[1024] = {};
+        char value[1024];
+        char string[1024];
+        char single_char;
+    };
+
+    int line_number = 0;
+    int line_first_char = 0;
+    int start_char = 0;
+    int end_char = 0;
 };
 
 bool is_single_char(char c) {
-    return c == '{' || c == '}' || c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '"';
+    return c == '{' || c == '}' || c == '(' || c == ')' || c == '=' || c == ',' || c == ';' || c == '"' || c == ':';
 }
 
 bool is_number(char c) {
     return (c >= '0' && c <= '9') || c == '.';
 }
 
-void tokenize(const char *text, Array<Token> &tokens) {
+struct Line {
+    char text[1024] = {};
+    int cursor = 0;
+};
+
+void tokenize(const char *text, Array<Token> &tokens, Array<Line> &lines) {
 	const char *position = text;
 
     bool should_advance = true;
 
+    int line_number = 1;
+    int line_position = 1;
+    Line new_line;
+
+    auto advance = [&text, &line_position, &new_line]() -> void {
+        if(*text != '\n') {
+            new_line.text[new_line.cursor] = *text;
+            new_line.cursor++;
+        }
+        
+        text++;
+        line_position++; 
+    };
+
     while(*text) {
+        if(*text == '\t') printf("no tabs allowed! idiot.\n");
+
         while(*text <= 32) {
             if(!*text) break;
 
-            text++;
+            if(*text == '\n') {
+                lines.append(new_line);
+                new_line.cursor = 0;
+                memset(new_line.text, 0, 1024);
+
+                line_number++;
+                line_position = 0;
+            }
+
+            advance();
             continue;
         }
 
         if(is_single_char(*text)) {
             if(*text == '"') {
-                text++;
+                advance();
 
                 Token t;
                 t.type = TT_STRING;
+                t.line_number = line_number;
+                t.start_char = line_position;
                 int n = 0;
                 while(*text != '"') {
                     if(!*text) break;
                     t.string[n] = *text;
                     n++;
-                    text++;
+                    advance();
                 }
+                t.end_char = line_position;
                 tokens.append(t);
-                text++;
+                advance();
+                should_advance = false;
             } else {
                 Token t;
+                t.line_number = line_number;
+                t.start_char = t.end_char = line_position;
                 t.type = TT_SINGLE_CHAR;
                 t.single_char = *text;
                 tokens.append(t);
@@ -62,8 +106,9 @@ void tokenize(const char *text, Array<Token> &tokens) {
         } else {
             if(*text >= '0' && *text <= '9') {
                 Token t;
+                t.line_number = line_number;
+                t.start_char = line_position;
                 t.type = TT_VALUE;
-
                 int n = 0;
                 while(*text > 32) {
                     if(!is_number(*text)) {
@@ -73,12 +118,14 @@ void tokenize(const char *text, Array<Token> &tokens) {
 
                     t.value[n] = *text;
                     n++;
-                    text++;
+                    advance();
                 }
-
+                t.end_char = line_position;
                 tokens.append(t);
             } else {
                 Token t;
+                t.line_number = line_number;
+                t.start_char = line_position;
                 t.type = TT_NAME;
                 int n = 0;
 
@@ -90,37 +137,52 @@ void tokenize(const char *text, Array<Token> &tokens) {
 
                     t.name[n] = *text;
                     n++;
-                    text++;
+                    advance();
                 }
-
+                t.end_char = line_position;
                 tokens.append(t);
             }
         }
 
-        if(should_advance) text++;
+        if(should_advance) advance();
         should_advance = true;
     }
+
+    lines.append(new_line);
 }
 
-struct Ast_Node {
-    char name[64] = {};
-    Ast_Node *children = nullptr;
-    Ast_Node *next = nullptr;
-};
+void report_error(Config_File *config, Token *t, const char *text, Array<Line> &lines) {
+    printf("%s(%d): %s:\n", config->file_name, t->line_number, text);
+
+    printf("%s\n", lines[t->line_number - 1].text);
+
+    for(int i = 0; i < t->start_char - 1; i++) printf(" ");
+    for(int i = 0; i < t->end_char - t->start_char; i++) printf("^");
+
+    printf("\n");
+}
 
 bool load_config_file(Config_File *config, const char *file_name) {
     Load_File_Result file = load_file(file_name);
     if(!file.data) return false;
 
-    Array<Token> tokens;
-    tokenize(file.data, tokens);
+    config->file_name = file_name;
 
-    For(tokens) {
-        if(it.type == TT_SINGLE_CHAR) printf("Single char: %c\n", it.single_char);
-        else if(it.type == TT_NAME) printf("Name: %s\n", it.name);
-        else if (it.type == TT_VALUE) printf("Value: %s\n", it.value);
-        else if (it.type == TT_STRING) printf("String: %s\n", it.string);
-    }}}
+    Array<Token> tokens;
+    Array<Line> lines;
+    tokenize(file.data, tokens, lines);
+
+    if(tokens[0].type != TT_NAME || tokens[1].type != TT_SINGLE_CHAR || tokens[1].single_char != '{') {
+        report_error(config, &tokens[0], "first declaration must be a node.", lines);
+        return false;
+    }
+
+    //For(tokens) {
+    //    if(it.type == TT_SINGLE_CHAR)   printf("Single char (%d) (%d - %d): %c\n", it.line_number, it.start_char, it.end_char, it.single_char);
+    //    else if(it.type == TT_NAME)     printf("Name        (%d) (%d - %d): %s\n", it.line_number, it.start_char, it.end_char, it.name);
+    //    else if (it.type == TT_VALUE)   printf("Value       (%d) (%d - %d): %s\n", it.line_number, it.start_char, it.end_char, it.value);
+    //    else if (it.type == TT_STRING)  printf("String      (%d) (%d - %d): %s\n", it.line_number, it.start_char, it.end_char, it.string);
+    //}}}
 
     return true;
 }
