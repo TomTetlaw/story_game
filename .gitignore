@@ -32,6 +32,10 @@ Thumbs.db
 *.log
 .vs
 
+*.obj
+*.exe
+*.pdb
+
 [Bb]in
 [Dd]ebug/
 *.sbr

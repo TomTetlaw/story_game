@@ -152,7 +152,7 @@ void tokenize(const char *text, Array<Token> &tokens, Array<Line> &lines) {
 }
 
 void report_error(Config_File *config, Token *t, const char *text, Array<Line> &lines) {
-    printf("%s(%d): %s:\n", config->file_name, t->line_number, text);
+    printf("Error in %s at line %d: %s:\n", config->file_name, t->line_number, text);
 
     printf("%s\n", lines[t->line_number - 1].text);
 
@@ -161,6 +161,18 @@ void report_error(Config_File *config, Token *t, const char *text, Array<Line> &
 
     printf("\n");
 }
+
+Token *get_next_token(Array<Token> &tokens, int current) {
+    if(current + 1 >= tokens.num) return nullptr;
+    return &tokens[current + 1];
+}
+
+struct Node {
+    char name[1024] = {};
+
+    Node *next = nullptr;
+    Node *children = nullptr;
+};
 
 bool load_config_file(Config_File *config, const char *file_name) {
     Load_File_Result file = load_file(file_name);
@@ -172,9 +184,21 @@ bool load_config_file(Config_File *config, const char *file_name) {
     Array<Line> lines;
     tokenize(file.data, tokens, lines);
 
-    if(tokens[0].type != TT_NAME || tokens[1].type != TT_SINGLE_CHAR || tokens[1].single_char != '{') {
-        report_error(config, &tokens[0], "first declaration must be a node.", lines);
+    if(tokens.num < 1) {
+        printf("File %s has no contents.\n", file_name);
         return false;
+    }
+
+    int scope_level = 0;
+    int current_index = 0;
+    Token *t = &tokens[0];
+
+    auto advance = [&current_index, &t, &tokens]() -> void { current_index++; t = &tokens[current_index]; };
+    while(true) {
+        if(t->type != TT_NAME) {
+            report_error(config, t, "declarations must start with a name", lines);
+            return false;
+        }
     }
 
     //For(tokens) {
