@@ -1,18 +1,78 @@
 #define IMGUI_IMPLIMENTATION
 #include "include.h"
 
+enum Tile_Type {
+    TT_FLOOR,
+    TT_WALL,
+};
+
+struct Tile {
+    Tile_Type type;
+    Texture *texture = nullptr;
+    Vec2 position;
+};
+
+bool tile_is_blocking(Tile *tile) {
+    return tile->type == TT_WALL;
+}
+
+struct Level {
+    Array<Tile> tiles;
+    int width = 0;
+    int height = 0;
+};
+
+void parse_level_row(Level *level, const char *string) {
+    level->width = strlen(string);
+
+    for(int i = 0; i < level->width; i++) {
+        char c = string[i];
+
+        switch(c) {
+        case 'x': {
+            Tile tile;
+            tile.type = TT_WALL;
+            tile.texture = load_texture("data/textures/wall.png");
+            tile.position = Vec2(i, level->height);
+            level->tiles.append(tile);
+        } break;
+        case ' ': {
+            Tile tile;
+            tile.type = TT_FLOOR;
+            tile.texture = load_texture("data/textures/floor.png");
+            tile.position = Vec2(i, level->height);
+            level->tiles.append(tile);
+        } break;
+        default:
+            printf("unknown char: %d '%c'\n", c, c);
+            break;
+        }
+    }
+
+    level->height += 1;
+}
+
 int main() {
     sys_init();
 
-    Config_File file;
-    load_config_file(&file, "data/config/test_config.txt");
-    
-    Entity *entity = create_entity();
-    add_texture_component(entity);
-    add_physics_component(entity);
-    entity->physics->position = Vec2(100, 100);
-    entity->physics->size = Vec2(32, 32);
-    entity->texture->texture = load_texture("data/textures/test.png");
+    Level l0;
+    parse_level_row(&l0, "xxxxxxxxxxxxxxxxxx");
+    parse_level_row(&l0, "x                x");
+    parse_level_row(&l0, "x        xxxxxxxxx");
+    parse_level_row(&l0, "x        x        ");
+    parse_level_row(&l0, "x        x        ");
+    parse_level_row(&l0, "x        xxxxxxxxx");
+    parse_level_row(&l0, "x                x");
+    parse_level_row(&l0, "x                x");
+    parse_level_row(&l0, "xxxxxxxxxxxxxxxxxx");
+
+    FILE *f = nullptr;
+    fopen_s(&f, "data/tiles_dump.txt", "w");
+    For(l0.tiles) {
+        fprintf(f, "%d: %s (%f, %f)\n", it_index, it.type == TT_WALL ? "wall" : "floor", V2PARMS(it.position));
+        printf("%d\n",(int)it.texture);
+    }}}
+    fclose(f);
 
     bool running = true;
     SDL_Event event;
@@ -23,27 +83,31 @@ int main() {
                 break;
             }
 
-            if(!editor_gui_handled(&event)) {
-                if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
-                    bool down = (event.type == SDL_MOUSEBUTTONDOWN);
-                    input_mouse(Vec2(event.button.x, event.button.y), event.button.button, down);
-                } else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-                    int mods = 0;
-                    if(event.key.keysym.mod | KMOD_CTRL) mods |= KEY_MOD_CTRL;
-                    if(event.key.keysym.mod | KMOD_ALT) mods |= KEY_MOD_ALT;
-                    if(event.key.keysym.mod | KMOD_SHIFT) mods |= KEY_MOD_SHIFT;
-                    bool down = (event.type == SDL_KEYDOWN);
-                    input_key(event.key.keysym.scancode, down, mods);
-                }
+            if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+                bool down = (event.type == SDL_MOUSEBUTTONDOWN);
+                input_mouse(Vec2(event.button.x, event.button.y), event.button.button, down);
+            } else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+                int mods = 0;
+                if(event.key.keysym.mod | KMOD_CTRL)    mods |= KEY_MOD_CTRL;
+                if(event.key.keysym.mod | KMOD_ALT)     mods |= KEY_MOD_ALT;
+                if(event.key.keysym.mod | KMOD_SHIFT)   mods |= KEY_MOD_SHIFT;
+                bool down = (event.type == SDL_KEYDOWN);
+                input_key(event.key.keysym.scancode, down, mods);
             }
         } else {
             sys_update();
-            entity_update();
-            editor_update();
 
             renderer_begin_frame();
-            entity_render();
-            editor_render();
+
+            const float tile_size = 32;
+            For(l0.tiles) {
+                Render_Texture rt;
+                rt.position = it.position * Vec2(tile_size, tile_size);
+                rt.texture = it.texture;
+                printf("Rendering tile type %d at %f %f (index %d).\n", it.type, it.position.x, it.position.y, it_index);
+                render_texture(&rt);
+            }}}
+
             renderer_end_frame();
             
             frame_num++;

@@ -11,7 +11,7 @@ struct Array {
 	~Array();
 	// make sure the memory is big enough for new_size elements
 	void ensure_size(int new_size);
-	void append(const T &value);
+	void append(T value);
 	// removes the value at index i and moves all elements infront of i back one
 	void remove(int i);
 	// adds a new element to the array and returns a pointer to it
@@ -44,9 +44,11 @@ void Array<T>::ensure_size(int new_size) {
 	if(allocator) data = (T *)allocator->alloc(new_size * sizeof(T));
 	else data = new T[new_size];
 
-	for (int i = 0; i < num; i++) {
-		data[i] = old_data[i];
-	}
+    memcpy(data, old_data, size * sizeof(T));
+
+	//for (int i = 0; i < num; i++) {
+	//	data[i] = old_data[i];
+	//}
 	
 	//@todo: Scratch_Allocator maybe needs to be able to handle resizing of allocations.
 	if(!allocator) delete[] old_data;
@@ -54,7 +56,7 @@ void Array<T>::ensure_size(int new_size) {
 }
 
 template<typename T>
-void Array<T>::append(const T &value) {
+void Array<T>::append(T value) {
 	ensure_size(num + 1);
 
 	data[num] = value;

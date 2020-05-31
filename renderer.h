@@ -21,6 +21,8 @@ void renderer_shutdown();
 void renderer_begin_frame();
 void renderer_end_frame();
 
+uint renderer_create_texture(int width, int height, void *pixels);
+
 void load_program(Program *program);
 void set_program(Program *program);
 

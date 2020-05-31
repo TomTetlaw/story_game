@@ -15,10 +15,6 @@
 #include "include/glm/glm.hpp"
 #include "include/glm/gtc/matrix_transform.hpp"
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl.h"
-#include "imgui/imgui_impl_opengl3.h"
-
 #define internal static
 typedef unsigned int uint;
 
@@ -26,13 +22,10 @@ typedef unsigned int uint;
 #include "array.h"
 #include "mathlib.h"
 #include "common.h"
-#include "config.h"
 #include "system.h"
 #include "texture.h"
 #include "renderer.h"
 #include "hotload.h"
-#include "entity.h"
-#include "editor.h"
 #include "input.h"
 
 #endif

@@ -25,19 +25,8 @@ void load_into_texture(Texture *texture) {
 		surface = new_surface;
 	}
 
-	unsigned int api_object = 0;
-	glCreateTextures(GL_TEXTURE_2D, 1, &api_object);
-	glTextureParameteri(api_object, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(api_object, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(api_object, GL_TEXTURE_MAX_LEVEL, 0);
-	glTextureParameteri(api_object, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(api_object, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureStorage2D(api_object, 1, GL_RGBA8, surface->w, surface->h);
-	glTextureSubImage2D(api_object, 0, 0, 0, surface->w, surface->h, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
-	glGenerateTextureMipmap(api_object);
-
 	texture->size = Vec2(surface->w, surface->h);
-    texture->api_object = api_object;
+    texture->api_object = renderer_create_texture(surface->w, surface->h, surface->pixels);
 
 	SDL_FreeSurface(surface);
 }

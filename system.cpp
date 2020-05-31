@@ -25,10 +25,10 @@ void sys_init() {
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG | SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	sys.context = SDL_GL_CreateContext(sys.window);
     if(!sys.context) sys_error("Failed to create OpenGL context: %s.", SDL_GetError());
 
@@ -40,13 +40,8 @@ void sys_init() {
 
     if(!IMG_Init(IMG_INIT_PNG)) sys_error("Failed to initialize SDL_image: %s.", IMG_GetError());
 
-    ImGui::CreateContext();
-    ImGui_ImplSDL2_InitForOpenGL(sys.window, sys.context);
-    ImGui_ImplOpenGL3_Init();
-
     hotload_init();
     renderer_init();
-    editor_init();
 }
 
 internal float last_time = 0.0f;
@@ -64,15 +59,10 @@ void sys_update() {
 }
 
 void sys_shutdown() {
-    editor_shutdown();
     hotload_shutdown();
 
     unload_textures();
     renderer_shutdown();
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
 
     IMG_Quit();
 

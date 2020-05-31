@@ -166,9 +166,7 @@ void renderer_init() {
 	glDebugMessageCallback((GLDEBUGPROC)opengl_debug_callback, nullptr);
 	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-	glGenVertexArrays(1, &vertex_array);
-	glBindVertexArray(vertex_array);
-
+    glCreateVertexArrays(1, &vertex_array);
 	glEnableVertexArrayAttrib(vertex_array, 0);
 	glEnableVertexArrayAttrib(vertex_array, 1);
 	glEnableVertexArrayAttrib(vertex_array, 2);
@@ -184,17 +182,18 @@ void renderer_init() {
 	glCreateBuffers(1, &index_buffer);
 	glNamedBufferData(index_buffer, MAX_INDICES * sizeof(uint), nullptr, GL_DYNAMIC_DRAW);
 
-	glBindVertexArray(vertex_array);
+    glBindVertexArray(vertex_array);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 
 	setup_program(&basic_textured, "data/shaders/basic_textured.vert", "data/shaders/basic_textured.frag");
 	setup_program(&basic, "data/shaders/basic.vert", "data/shaders/basic.frag");
 
-	r_allocator.init(1024 * 10);
-	index_list.allocator = &r_allocator;
-	vertex_list.allocator = &r_allocator;
-	commands.allocator = &r_allocator;
+    //@todo: figure out why this asserts during runtime.
+	//r_allocator.init(1024 * 1000);
+	//index_list.allocator = &r_allocator;
+	//vertex_list.allocator = &r_allocator;
+	//commands.allocator = &r_allocator;
 }
 
 void renderer_shutdown() {
@@ -207,9 +206,6 @@ void renderer_shutdown() {
 
 void renderer_begin_frame() {
 	r_allocator.reset();
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void renderer_end_frame() {
@@ -217,6 +213,9 @@ void renderer_end_frame() {
 	assert(index_list.num < MAX_INDICES);
 	glNamedBufferSubData(vertex_buffer, 0, vertex_list.num * sizeof(Vertex), vertex_list.data);
 	glNamedBufferSubData(index_buffer, 0, index_list.num * sizeof(uint), index_list.data);
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	For(commands) {
 		switch (it.type) {
@@ -226,24 +225,15 @@ void renderer_end_frame() {
 			glDrawElementsBaseVertex(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, it.texture.first_vertex);
 			glBindTexture(GL_TEXTURE_2D, 0);
 			break;
-		case RC_SOME_VERTS:
-			set_program(&basic);
-			if (it.verts.fill)
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			else
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glDrawElementsBaseVertex(it.verts.mode, it.verts.num_indices, GL_UNSIGNED_INT, nullptr, it.verts.first_vertex);
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			break;
 		}
 	}}}
 
-	commands.num = 0;
-	vertex_list.num = 0;
-	index_list.num = 0;
-
 	SDL_GL_SwapWindow(sys.window);
 	glUseProgram(0);
+
+    commands.num = 0;
+	vertex_list.num = 0;
+	index_list.num = 0;
 }
 
 void set_program(Program *program) {
@@ -360,6 +350,20 @@ void render_box(Vec2 position, Vec2 size, Vec4 colour) {
 	commands.append(rc);
 }
 
+uint renderer_create_texture(int width, int height, void *pixels) {
+    uint api_object = 0;
+	glCreateTextures(GL_TEXTURE_2D, 1, &api_object);
+	glTextureParameteri(api_object, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(api_object, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(api_object, GL_TEXTURE_MAX_LEVEL, 0);
+	glTextureParameteri(api_object, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(api_object, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureStorage2D(api_object, 1, GL_RGBA8, width, height);
+	glTextureSubImage2D(api_object, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glGenerateTextureMipmap(api_object);
+    return api_object;
+}
+
 void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
 	if (id == 131185)
 		return;
@@ -422,9 +426,7 @@ void opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
 		break;
 	}
 
-	if (severity != GL_DEBUG_SEVERITY_LOW_ARB) {
-		printf("[%d, %s, %s, %s] %s\n", id, message_source, message_type, message_severity, message);
-	}
+	printf("[%d, %s, %s, %s] %s\n", id, message_source, message_type, message_severity, message);
 
 	FILE *f = nullptr;
 	fopen_s(&f, "data/opengl.log", "a");
