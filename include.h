@@ -24,6 +24,7 @@ typedef unsigned int uint;
 #include "common.h"
 #include "system.h"
 #include "texture.h"
+#include "gl_wrapper.h"
 #include "renderer.h"
 #include "hotload.h"
 #include "input.h"

@@ -44,11 +44,9 @@ void Array<T>::ensure_size(int new_size) {
 	if(allocator) data = (T *)allocator->alloc(new_size * sizeof(T));
 	else data = new T[new_size];
 
-    memcpy(data, old_data, size * sizeof(T));
-
-	//for (int i = 0; i < num; i++) {
-	//	data[i] = old_data[i];
-	//}
+	for (int i = 0; i < num; i++) {
+		data[i] = old_data[i];
+	}
 	
 	//@todo: Scratch_Allocator maybe needs to be able to handle resizing of allocations.
 	if(!allocator) delete[] old_data;

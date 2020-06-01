@@ -1,6 +1,6 @@
 #include "include.h"
 
-internal Array<Texture> textures;
+internal Array<Texture *> textures;
 
 void load_into_texture(Texture *texture) {
     SDL_Surface *surface = IMG_Load(texture->file_name);
@@ -39,23 +39,30 @@ void texture_hotload_callback(const char *filename, void *data) {
 
 Texture *load_texture(const char *file_name) {
     for(int i = 0; i < textures.num; i++) {
-        if(!strcmp(file_name, textures[i].file_name)) {
-            return &textures[i];
+        if(!strcmp(file_name, textures[i]->file_name)) {
+            return textures[i];
         }
     }
 
-    Texture *texture = textures.alloc();
+    Texture *texture = new Texture;
     texture->file_name = file_name;
     load_into_texture(texture);
     hotload_add_file(file_name, (void *)texture, texture_hotload_callback);
+    textures.append(texture);
     return texture;
 }
 
 void unload_textures() {
     for(int i = 0; i < textures.num; i++) {
-        if(textures[i].api_object) {
-            glDeleteTextures(1, &textures[i].api_object);
-            textures[i].api_object = 0;
+        if(textures[i]->api_object) {
+            glDeleteTextures(1, &textures[i]->api_object);
+            textures[i]->api_object = 0;
         }
     }
+}
+
+void textures_shutdown() {
+    For(textures) {
+        delete it;
+    }}}
 }

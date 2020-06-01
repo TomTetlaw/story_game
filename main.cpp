@@ -30,18 +30,16 @@ void parse_level_row(Level *level, const char *string) {
 
         switch(c) {
         case 'x': {
-            Tile tile;
-            tile.type = TT_WALL;
-            tile.texture = load_texture("data/textures/wall.png");
-            tile.position = Vec2(i, level->height);
-            level->tiles.append(tile);
+            Tile *tile = level->tiles.alloc();
+            tile->type = TT_WALL;
+            tile->texture = load_texture("data/textures/wall.png");
+            tile->position = Vec2(i, level->height);            
         } break;
         case ' ': {
-            Tile tile;
-            tile.type = TT_FLOOR;
-            tile.texture = load_texture("data/textures/floor.png");
-            tile.position = Vec2(i, level->height);
-            level->tiles.append(tile);
+            Tile *tile = level->tiles.alloc();
+            tile->type = TT_FLOOR;
+            tile->texture = load_texture("data/textures/floor.png");
+            tile->position = Vec2(i, level->height);
         } break;
         default:
             printf("unknown char: %d '%c'\n", c, c);
@@ -65,14 +63,6 @@ int main() {
     parse_level_row(&l0, "x                x");
     parse_level_row(&l0, "x                x");
     parse_level_row(&l0, "xxxxxxxxxxxxxxxxxx");
-
-    FILE *f = nullptr;
-    fopen_s(&f, "data/tiles_dump.txt", "w");
-    For(l0.tiles) {
-        fprintf(f, "%d: %s (%f, %f)\n", it_index, it.type == TT_WALL ? "wall" : "floor", V2PARMS(it.position));
-        printf("%d\n",(int)it.texture);
-    }}}
-    fclose(f);
 
     bool running = true;
     SDL_Event event;
@@ -104,7 +94,6 @@ int main() {
                 Render_Texture rt;
                 rt.position = it.position * Vec2(tile_size, tile_size);
                 rt.texture = it.texture;
-                printf("Rendering tile type %d at %f %f (index %d).\n", it.type, it.position.x, it.position.y, it_index);
                 render_texture(&rt);
             }}}
 

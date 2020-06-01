@@ -62,6 +62,7 @@ void sys_shutdown() {
     hotload_shutdown();
 
     unload_textures();
+    textures_shutdown();
     renderer_shutdown();
 
     IMG_Quit();

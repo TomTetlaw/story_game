@@ -74,25 +74,25 @@ unsigned int load_shader(const char *filename, unsigned int type) {
 
 	Load_File_Result file = load_file(filename);
 	object = glCreateShader(type);
-	glShaderSource(object, 1, &file.data, &file.length);
-	glCompileShader(object);
+	gl(ShaderSource, object, 1, &file.data, &file.length);
+	gl(CompileShader, object);
 	delete[] file.data;
 
-	glGetShaderiv(object, GL_COMPILE_STATUS, &compiled);
+	gl(GetShaderiv, object, GL_COMPILE_STATUS, &compiled);
 	if (!compiled) {
 		printf("Failed to compile shader %s", filename);
 
 		GLint blen = 0;
 		GLsizei slen = 0;
-		glGetShaderiv(object, GL_INFO_LOG_LENGTH, &blen);
+		gl(GetShaderiv, object, GL_INFO_LOG_LENGTH, &blen);
 		if (blen > 1) {
 			char *compiler_log = new char[blen];
-			glGetShaderInfoLog(object, blen, &slen, compiler_log);
+			gl(GetShaderInfoLog, object, blen, &slen, compiler_log);
 			printf("Shader info log: %s", compiler_log);
 			delete[] compiler_log;
 		}
 
-		glDeleteShader(object);
+		gl(DeleteShader, object);
 		return 0;
 	}
 
@@ -103,47 +103,47 @@ void load_program(Program *program) {
 	program->vertex_object = load_shader(program->vertex_filename, GL_VERTEX_SHADER);
 	program->frag_object = load_shader(program->frag_filename, GL_FRAGMENT_SHADER);
 	program->program_object = glCreateProgram();
-	glAttachShader(program->program_object, program->vertex_object);
-	glAttachShader(program->program_object, program->frag_object);
-	glLinkProgram(program->program_object);
+	gl(AttachShader, program->program_object, program->vertex_object);
+	gl(AttachShader, program->program_object, program->frag_object);
+	gl(LinkProgram, program->program_object);
 
 	GLint linked;
-	glGetProgramiv(program->program_object, GL_LINK_STATUS, &linked);
+	gl(GetProgramiv, program->program_object, GL_LINK_STATUS, &linked);
 	if (!linked) {
 		printf("Failed to link program");
 
 		GLint blen = 0;
 		GLsizei slen = 0;
-		glGetProgramiv(program->program_object, GL_INFO_LOG_LENGTH, &blen);
+		gl(GetProgramiv, program->program_object, GL_INFO_LOG_LENGTH, &blen);
 		if (blen > 1) {
 			char *compiler_log = new char[blen];
-			glGetProgramInfoLog(program->program_object, blen, &slen, compiler_log);
+			gl(GetProgramInfoLog, program->program_object, blen, &slen, compiler_log);
 			printf("Program info log: %s", compiler_log);
 			delete[] compiler_log;
 		}
 
-		glDeleteProgram(program->program_object);
+		gl(DeleteProgram, program->program_object);
 	}
 }
 
 void hotload_vertex_callback(const char *filename, void *data) {
 	Program *program = (Program *)data;
 
-	glDetachShader(program->program_object, program->vertex_object);
-	glDeleteShader(program->vertex_object);
+	gl(DetachShader, program->program_object, program->vertex_object);
+	gl(DeleteShader, program->vertex_object);
 	program->vertex_object = load_shader(program->vertex_filename, GL_VERTEX_SHADER);
-	glAttachShader(program->program_object, program->vertex_object);
-	glLinkProgram(program->program_object);
+	gl(AttachShader, program->program_object, program->vertex_object);
+	gl(LinkProgram, program->program_object);
 }
 
 void hotload_frag_callback(const char *filename, void *data) {
 	Program *program = (Program *)data;
 
-	glDetachShader(program->program_object, program->frag_object);
-	glDeleteShader(program->frag_object);
+	gl(DetachShader, program->program_object, program->frag_object);
+	gl(DeleteShader, program->frag_object);
 	program->frag_object = load_shader(program->frag_filename, GL_FRAGMENT_SHADER);
-	glAttachShader(program->program_object, program->frag_object);
-	glLinkProgram(program->program_object);
+	gl(AttachShader, program->program_object, program->frag_object);
+	gl(LinkProgram, program->program_object);
 }
 
 void setup_program(Program *program, const char *vertex_filename, const char *frag_filename) {
@@ -161,30 +161,30 @@ void renderer_init() {
 
 	glEnable(GL_TEXTURE_2D);
 	
-	glEnable(GL_DEBUG_OUTPUT);
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback((GLDEBUGPROC)opengl_debug_callback, nullptr);
-	glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+	gl(Enable, GL_DEBUG_OUTPUT);
+	gl(Enable, GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	gl(DebugMessageCallback, (GLDEBUGPROC)opengl_debug_callback, nullptr);
+	gl(DebugMessageControl, GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-    glCreateVertexArrays(1, &vertex_array);
-	glEnableVertexArrayAttrib(vertex_array, 0);
-	glEnableVertexArrayAttrib(vertex_array, 1);
-	glEnableVertexArrayAttrib(vertex_array, 2);
-	glEnableVertexArrayAttrib(vertex_array, 3);
-	glVertexArrayAttribFormat(vertex_array, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
-	glVertexArrayAttribFormat(vertex_array, 1, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, colour));
-	glVertexArrayAttribFormat(vertex_array, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
-	glVertexArrayAttribFormat(vertex_array, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+    gl(CreateVertexArrays, 1, &vertex_array);
+	gl(EnableVertexArrayAttrib, vertex_array, 0);
+	gl(EnableVertexArrayAttrib, vertex_array, 1);
+	gl(EnableVertexArrayAttrib, vertex_array, 2);
+	gl(EnableVertexArrayAttrib, vertex_array, 3);
+	gl(VertexArrayAttribFormat, vertex_array, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+	gl(VertexArrayAttribFormat, vertex_array, 1, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, colour));
+	gl(VertexArrayAttribFormat, vertex_array, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
+	gl(VertexArrayAttribFormat, vertex_array, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
 
-	glCreateBuffers(1, &vertex_buffer);
-	glNamedBufferData(vertex_buffer, MAX_VERTICIES * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+	gl(CreateBuffers, 1, &vertex_buffer);
+	gl(NamedBufferData, vertex_buffer, MAX_VERTICIES * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
 
-	glCreateBuffers(1, &index_buffer);
-	glNamedBufferData(index_buffer, MAX_INDICES * sizeof(uint), nullptr, GL_DYNAMIC_DRAW);
+	gl(CreateBuffers, 1, &index_buffer);
+	gl(NamedBufferData, index_buffer, MAX_INDICES * sizeof(uint), nullptr, GL_DYNAMIC_DRAW);
 
-    glBindVertexArray(vertex_array);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    gl(BindVertexArray, vertex_array);
+	gl(BindBuffer, GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+	gl(BindBuffer, GL_ARRAY_BUFFER, vertex_buffer);
 
 	setup_program(&basic_textured, "data/shaders/basic_textured.vert", "data/shaders/basic_textured.frag");
 	setup_program(&basic, "data/shaders/basic.vert", "data/shaders/basic.frag");
@@ -197,9 +197,9 @@ void renderer_init() {
 }
 
 void renderer_shutdown() {
-	glDeleteBuffers(1, &vertex_buffer);
-	glDeleteBuffers(1, &index_buffer);
-	glDeleteVertexArrays(1, &vertex_array);
+	gl(DeleteBuffers, 1, &vertex_buffer);
+	gl(DeleteBuffers, 1, &index_buffer);
+	gl(DeleteVertexArrays, 1, &vertex_array);
 
 	r_allocator.shutdown();
 }
@@ -211,25 +211,25 @@ void renderer_begin_frame() {
 void renderer_end_frame() {
 	assert(vertex_list.num < MAX_VERTICIES);
 	assert(index_list.num < MAX_INDICES);
-	glNamedBufferSubData(vertex_buffer, 0, vertex_list.num * sizeof(Vertex), vertex_list.data);
-	glNamedBufferSubData(index_buffer, 0, index_list.num * sizeof(uint), index_list.data);
+	gl(NamedBufferSubData, vertex_buffer, 0, vertex_list.num * sizeof(Vertex), vertex_list.data);
+	gl(NamedBufferSubData, index_buffer, 0, index_list.num * sizeof(uint), index_list.data);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	gl(ClearColor, 0.0f, 0.0f, 0.0f, 1.0f);
+	gl(Clear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	For(commands) {
 		switch (it.type) {
 		case RC_TEXTURE:
 			set_program(&basic_textured);
-			glBindTexture(GL_TEXTURE_2D, it.texture.texture->api_object);
-			glDrawElementsBaseVertex(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, it.texture.first_vertex);
-			glBindTexture(GL_TEXTURE_2D, 0);
+			gl(BindTexture, GL_TEXTURE_2D, it.texture.texture->api_object);
+			gl(DrawElementsBaseVertex, GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, it.texture.first_vertex);
+			gl(BindTexture, GL_TEXTURE_2D, 0);
 			break;
 		}
 	}}}
 
 	SDL_GL_SwapWindow(sys.window);
-	glUseProgram(0);
+	gl(UseProgram, 0);
 
     commands.num = 0;
 	vertex_list.num = 0;
@@ -243,7 +243,7 @@ void set_program(Program *program) {
 		return;
 	}
 
-	glUseProgram(current_program->program_object);
+	gl(UseProgram, current_program->program_object);
 
 	projection_matrix = create_ortho_matrix(0, window_width, window_height, 0);
 	worldview_matrix = create_identity_matrix();
@@ -251,15 +251,15 @@ void set_program(Program *program) {
 	int projection_matrix_loc = glGetUniformLocation(current_program->program_object, "projection_matrix");
 	int worldview_matrix_loc = glGetUniformLocation(current_program->program_object, "worldview_matrix");
 
-	glUniformMatrix4fv(projection_matrix_loc, 1, GL_FALSE, projection_matrix.e);
-	glUniformMatrix4fv(worldview_matrix_loc, 1, GL_FALSE, worldview_matrix.e);
+	gl(UniformMatrix4fv, projection_matrix_loc, 1, GL_FALSE, projection_matrix.e);
+	gl(UniformMatrix4fv, worldview_matrix_loc, 1, GL_FALSE, worldview_matrix.e);
 
 	int now_loc = glGetUniformLocation(current_program->program_object, "now");
-	glUniform1f(now_loc, now);
+	gl(Uniform1f, now_loc, now);
 
 	if (current_program == &basic_textured) {
 		int sampler_loc = glGetUniformLocation(current_program->program_object, "diffuse_texture");
-		glUniform1i(sampler_loc, 0);
+		gl(Uniform1i, sampler_loc, 0);
 	}
 }
 
@@ -352,15 +352,14 @@ void render_box(Vec2 position, Vec2 size, Vec4 colour) {
 
 uint renderer_create_texture(int width, int height, void *pixels) {
     uint api_object = 0;
-	glCreateTextures(GL_TEXTURE_2D, 1, &api_object);
-	glTextureParameteri(api_object, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(api_object, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(api_object, GL_TEXTURE_MAX_LEVEL, 0);
-	glTextureParameteri(api_object, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(api_object, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureStorage2D(api_object, 1, GL_RGBA8, width, height);
-	glTextureSubImage2D(api_object, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	glGenerateTextureMipmap(api_object);
+	gl(CreateTextures, GL_TEXTURE_2D, 1, &api_object);
+	gl(TextureParameteri, api_object, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl(TextureParameteri, api_object, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl(TextureParameteri, api_object, GL_TEXTURE_MAX_LEVEL, 0);
+	gl(TextureParameteri, api_object, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	gl(TextureParameteri, api_object, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	gl(TextureStorage2D, api_object, 1, GL_RGBA, width, height);
+	gl(TextureSubImage2D, api_object, 0, 0, 0, width, height, GL_RGBA8, GL_UNSIGNED_BYTE, pixels);
     return api_object;
 }
 

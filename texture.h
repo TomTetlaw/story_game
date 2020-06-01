@@ -7,6 +7,8 @@ struct Texture {
     const char *file_name = nullptr;
 };
 
+void textures_shutdown();
+
 Texture *load_texture(const char *file_name);
 void unload_textures();
 
