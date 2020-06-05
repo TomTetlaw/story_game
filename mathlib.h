@@ -9,6 +9,8 @@
 #define M_PI_F ((float)(M_PI))
 #endif
 
+#define math_pi M_PI_F
+
 inline float deg2rad(float x) {
 	return x * (M_PI_F / 180.0f);
 }
@@ -59,11 +61,15 @@ inline float map_range(float x, float min1, float max1, float min2, float max2) 
 	return (max2 - min2) * (x / (max1 - min1));
 }
 
-inline float random_float(float min_value, float max_value) {
-	return min_value + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max_value - min_value)));
+inline int random_int(int min_value, int max_value) {
+    return min_value + (rand() % (max_value - min_value + 1));
 }
 
-#define V4PARMS(v) v.x,v.y,v.z,v.w
+inline float random_float(float min_value, float max_value) {
+	return min_value + (static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max_value - min_value))));
+}
+
+#define v4parms(v) v.x,v.y,v.z,v.w
 struct Vec4 {
 	float x = 0, y = 0, z = 0, w = 0;
 
@@ -110,7 +116,7 @@ struct Vec4 {
 	}
 };
 
-#define V3PARMS(v) v.x,v.y,v.z
+#define v3parms(v) v.x,v.y,v.z
 struct Vec3 {
 	float x = 0, y = 0, z = 0;
 
@@ -176,7 +182,7 @@ struct Vec3 {
 	}
 }; 
 
-#define V2PARMS(v) v.x, v.y
+#define v2parms(v) v.x, v.y
 struct Vec2 {
 	float x = 0, y = 0;
 
@@ -195,9 +201,18 @@ struct Vec2 {
 		return delta.length();
 	}
 
+    float distance_to_sqr(Vec2 &other) {
+		Vec2 delta = *this - other;
+		return delta.length_sqr();
+	}
+
 	float length() {
 		return sqrtf(x*x + y*y);
 	}
+
+    float length_sqr() {
+        return x*x + y*y;
+    }
 
 	float dot(Vec2 &other) {
 		return x*other.x + y*other.y;

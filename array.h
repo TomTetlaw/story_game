@@ -6,7 +6,6 @@ struct Array {
 	T *data = nullptr;
 	int size = 0;
 	int num = 0;
-	Scratch_Allocator *allocator = nullptr;
 
 	~Array();
 	// make sure the memory is big enough for new_size elements
@@ -28,10 +27,11 @@ struct Array {
 };
 
 #define For(x) { if(x._num() > 0) { auto it = x[0]; for(int it_index = 0; it_index < x._num(); it_index++, it = x[it_index])
+#define Forn(x,y) for(int it = x; it < y; it++) 
 
 template<typename T>
 Array<T>::~Array() {
-	if(!allocator) delete[] data;
+	delete[] data;
 }
 
 template<typename T>
@@ -41,15 +41,13 @@ void Array<T>::ensure_size(int new_size) {
 	}
 
 	T *old_data = data;
-	if(allocator) data = (T *)allocator->alloc(new_size * sizeof(T));
-	else data = new T[new_size];
+	data = new T[new_size];
 
 	for (int i = 0; i < num; i++) {
 		data[i] = old_data[i];
 	}
 	
-	//@todo: Scratch_Allocator maybe needs to be able to handle resizing of allocations.
-	if(!allocator) delete[] old_data;
+	delete[] old_data;
 	size = new_size;
 }
 
@@ -68,8 +66,7 @@ void Array<T>::remove(int index) {
 	}
 
 	T *old_data = data;
-	if(allocator) (T *)data = allocator->alloc((size - 1) * sizeof(T));
-	else data = new T[size - 1];
+	data = new T[size - 1];
 
 	size = size - 1;
 	num = num - 1;
@@ -82,8 +79,7 @@ void Array<T>::remove(int index) {
 		data[i] = old_data[i + 1];
 	}
 
-	//@todo: Scratch_Allocator maybe needs to be able to handle resizing of allocations.
-	if(!allocator) delete[] old_data;
+	delete[] old_data;
 }
 
 template<typename T>

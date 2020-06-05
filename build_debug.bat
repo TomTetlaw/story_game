@@ -8,7 +8,7 @@ set cl_flags=/Gm- /W1 /MP /MTd /Z7 /Od /EHsc /nologo
 set link_flags=/out:game.exe /incremental:no /debug:full /nologo
 set src_files=w:\all_files.cpp
 REM set src_files=W:\*.cpp
-set lib_files=w:\lib\sdl2.lib w:\lib\sdl2_image.lib w:\lib\glew32sd.lib user32.lib gdi32.lib opengl32.lib winmm.lib shell32.lib
+set lib_files=w:\lib\sdl2.lib w:\lib\sdl2_image.lib w:\lib\sdl2_ttf.lib w:\lib\glew32sd.lib user32.lib gdi32.lib opengl32.lib winmm.lib shell32.lib
 
 pushd w:\build
 cl %cl_flags% %src_files% %lib_files% /link %link_flags% 

@@ -3,6 +3,7 @@
 System sys;
 int window_width = 0;
 int window_height = 0;
+Vec2 window_size;
 float now = 0.0f;
 float delta_time = 0.0f;
 int frame_num = 0;
@@ -18,6 +19,7 @@ void sys_init() {
 
     window_width = 1366;
     window_height = 768;
+    window_size = Vec2(1366, 768);
 
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -25,8 +27,8 @@ void sys_init() {
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	sys.context = SDL_GL_CreateContext(sys.window);
@@ -34,14 +36,21 @@ void sys_init() {
 
     const unsigned char *version = glGetString(GL_VERSION);
     printf("OpenGL Version: %s\n", version);
-
+    const unsigned char *renderer = glGetString(GL_RENDERER);
+    printf("OpenGL Renderer: %s\n", renderer);
+    const unsigned char *vendor = glGetString(GL_VENDOR);
+    printf("OpenGL Vendor: %s\n", vendor);
+    
     GLenum result = glewInit();
     if(result != GLEW_OK) sys_error("Failed to initialize glew: %s.", glewGetErrorString(result));
 
     if(!IMG_Init(IMG_INIT_PNG)) sys_error("Failed to initialize SDL_image: %s.", IMG_GetError());
+    if(TTF_Init()) sys_error("Failed to initialize SDL_ttf: %s.", TTF_GetError());
+
+    srand(time(0));
 
     hotload_init();
-    renderer_init();
+    render_init();
 }
 
 internal float last_time = 0.0f;
@@ -61,9 +70,10 @@ void sys_update() {
 void sys_shutdown() {
     hotload_shutdown();
 
+    font_shutdown();
     unload_textures();
     textures_shutdown();
-    renderer_shutdown();
+    render_shutdown();
 
     IMG_Quit();
 

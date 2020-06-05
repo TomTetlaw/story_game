@@ -10,6 +10,7 @@ extern System sys;
 
 extern int window_width;
 extern int window_height;
+extern Vec2 window_size;
 extern float now;
 extern float delta_time;
 extern int frame_num;

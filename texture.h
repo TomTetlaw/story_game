@@ -12,4 +12,7 @@ void textures_shutdown();
 Texture *load_texture(const char *file_name);
 void unload_textures();
 
+// frees the surface after it creates the texture
+Texture *create_texture_from_surface(const char *name, SDL_Surface *surface);
+
 #endif
