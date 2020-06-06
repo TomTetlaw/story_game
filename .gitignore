@@ -36,6 +36,8 @@ Thumbs.db
 *.exe
 *.pdb
 
+4coder/
+
 [Bb]in
 [Dd]ebug/
 *.sbr

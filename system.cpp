@@ -51,6 +51,7 @@ void sys_init() {
 
     hotload_init();
     render_init();
+    ui_init();
 }
 
 internal float last_time = 0.0f;
@@ -68,8 +69,8 @@ void sys_update() {
 }
 
 void sys_shutdown() {
+    ui_shutdown();
     hotload_shutdown();
-
     font_shutdown();
     unload_textures();
     textures_shutdown();

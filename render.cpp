@@ -2,7 +2,6 @@
 
 Render renderer;
 
-internal Font *default_font = nullptr;
 internal float debug_string_start_y = 10.0f;
 internal Vec2 debug_string_position = Vec2(debug_string_start_y, 0.0f);
 internal bool centered = false;
@@ -29,7 +28,7 @@ void render_init() {
 		fclose(f);
 	}
 
-	default_font = load_font("data/fonts/CascadiaCode.ttf", 16);
+	renderer.default_font = load_font("data/fonts/CascadiaCode.ttf", 16);
 }
 
 void render_shutdown() {
@@ -123,6 +122,10 @@ Vec2 to_world_pos(Vec2 a) {
 	return (a + renderer.camera_position) * render_inverse_scale_for_zoom_level();
 }
 
+Vec2 to_ui_pos(Vec2 a) {
+    return ((a - renderer.camera_position) + (window_size * 0.5f)); //@todo: adjust for zoom
+}
+
 void render_texture(Render_Texture *rt) {
 	if (!rt->texture) {
 		return;
@@ -204,7 +207,7 @@ void render_texture(Render_Texture *rt) {
 
 void render_string(Vec2 position, const char *text, Vec4 colour, Font *font, float wrap) {
 	if (!font) {
-		font = default_font;
+		font = renderer.default_font;
 	}
 
 	float origin_x = position.x;
@@ -287,7 +290,7 @@ void debug_string(const char *text, ...) {
 	va_end(argptr);
 
 	render_string(debug_string_position, message);
-	debug_string_position.y += (float)default_font->line_skip;
+	debug_string_position.y += (float)renderer.default_font->line_skip;
 }
 
 void render_line(Vec2 a, Vec2 b, Vec4 colour) {

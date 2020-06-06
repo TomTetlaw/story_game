@@ -21,11 +21,14 @@ struct Render {
 
 	bool render_physics_debug = false;
 	bool render_debug_strings = false;
+    
+    Font *default_font = nullptr;
 };
 
 extern Render renderer;
 
 Vec2 to_world_pos(Vec2 a);
+Vec2 to_ui_pos(Vec2 a);
 float render_scale_for_zoom_level();
 float render_inverse_scale_for_zoom_level();
 void render_on_level_load();

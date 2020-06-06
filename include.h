@@ -28,6 +28,6 @@ typedef unsigned int uint;
 #include "font.h"
 #include "render.h"
 #include "hotload.h"
-#include "input.h"
+#include "ui.h"
 
 #endif
