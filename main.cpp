@@ -9,7 +9,7 @@ struct Star {
     bool is_point = false;
 };
 
-enum Resources {
+enum Resource_Type {
     RES_PEOPLE = 1,
     RES_ORGANICS,
     RES_FOOD,
@@ -26,9 +26,22 @@ enum Planet_Type {
     PT_NUM_TYPES,
 };
 
+struct Resource {
+    const char *name = nullptr;
+    Resource_Type type;
+    float amount = 0;
+};
+
+Resource res_people   = { "People",   RES_PEOPLE,   0.0f };
+Resource res_organics = { "Organics", RES_ORGANICS, 0.0f };
+Resource res_food     = { "Food",     RES_FOOD,     0.0f };
+Resource res_robots   = { "Robots",   RES_ROBOTS,   0.0f };
+Resource res_ore      = { "Ore",      RES_ORE,      0.0f };
+Resource res_tech     = { "Tech",     RES_TECH,     0.0f };
+
 struct Process {
-    int needs[8] = {};
-    int produces = 0;
+    Array<Resource> needs;
+    Resource produces;
 };
 
 struct Planet {
@@ -38,64 +51,76 @@ struct Planet {
     
     Planet_Type type;
     
+    Array<Process> processes;
+    
     Texture *texture = nullptr;
-    Process processes[8];
-    int num_processes = 0;
     Process *active_process = nullptr;
+    
+    Array<Planet *> connections;
 };
 
 void setup_planet_for_type(Planet *planet) {
     switch(planet->type) {
-        case PT_EARTH_LIKE:
-        planet->num_processes = 3;
-        planet->processes[0].needs[0] = RES_FOOD;
-        planet->processes[0].produces = RES_PEOPLE;
-        
-        planet->processes[1].needs[0] = RES_PEOPLE;
-        planet->processes[1].needs[1] = RES_ORGANICS;
-        planet->processes[1].produces = RES_FOOD;
-        
-        planet->processes[2].needs[0] = RES_PEOPLE;
-        planet->processes[2].produces = RES_ORGANICS;
-        
-        planet->active_process = &planet->processes[1];
-        
-        planet->texture = load_texture("data/textures/earth_like.png");
-        break;
-        case PT_ROCKY:
-        planet->num_processes = 4;
-        planet->processes[0].needs[0] = RES_PEOPLE;
-        planet->processes[0].produces = RES_ORE;
-        
-        planet->processes[1].needs[0] = RES_ROBOTS;
-        planet->processes[1].produces = RES_ORE;
-        
-        planet->processes[2].needs[0] = RES_PEOPLE;
-        planet->processes[2].produces = RES_TECH;
-        
-        planet->processes[3].needs[0] = RES_ROBOTS;
-        planet->processes[3].produces = RES_TECH;
-        
-        planet->active_process = &planet->processes[3];
-        
-        planet->texture = load_texture("data/textures/rocky.png");
-        break;
-        case PT_FORGE_WORLD:
-        planet->num_processes = 3;
-        planet->processes[0].needs[0] = RES_PEOPLE;
-        planet->processes[0].produces = RES_TECH;
-        
-        planet->processes[1].needs[0] = RES_ROBOTS;
-        planet->processes[1].produces = RES_TECH;
-        
-        planet->processes[2].needs[0] = RES_PEOPLE;
-        planet->processes[2].needs[1] = RES_TECH;
-        planet->processes[2].produces = RES_ROBOTS;
-        
-        planet->active_process = &planet->processes[2];
-        
-        planet->texture = load_texture("data/textures/forge_world.png");
-        break;
+        case PT_EARTH_LIKE: {       
+            Process p0, p1, p2;
+            
+            p0.needs.append(res_food);
+            p0.produces = res_people;
+            
+            p1.needs.append(res_people);
+            p1.needs.append(res_organics);
+            p1.produces = res_food;
+            
+            p2.needs.append(res_people);
+            p2.produces = res_organics;
+            
+            planet->processes.append(p0);
+            planet->processes.append(p1);
+            planet->processes.append(p2);
+            
+            planet->texture = load_texture("data/textures/earth_like.png");
+        } break;
+        case PT_ROCKY: {
+            Process p0, p1, p2, p3;
+            
+            p0.needs.append(res_people);
+            p0.produces = res_ore;
+            
+            p1.needs.append(res_robots);
+            p1.produces = res_ore;
+            
+            p2.needs.append(res_people);
+            p2.produces = res_tech;
+            
+            p3.needs.append(res_robots);
+            p3.produces = res_tech;
+            
+            planet->processes.append(p0);
+            planet->processes.append(p1);
+            planet->processes.append(p2);
+            planet->processes.append(p3);
+            
+            planet->texture = load_texture("data/textures/rocky.png");
+        } break; 
+        case PT_FORGE_WORLD: {
+            Process p0, p1, p2;
+            
+            p0.needs.append(res_people);
+            p0.produces = res_tech;
+            
+            p1.needs.append(res_robots);
+            p1.produces = res_tech;
+            
+            p2.needs.append(res_people);
+            p2.needs.append(res_tech);
+            p2.produces = res_robots;
+            
+            planet->processes.append(p0);
+            planet->processes.append(p1);
+            planet->processes.append(p2);
+            
+            planet->texture = load_texture("data/textures/forge_world.png");
+        } break;
     }
 }
 
@@ -133,10 +158,8 @@ void render_stars() {
 
 int circle_circle_intersection(Vec2 apos, Vec2 bpos, float aradius, float bradius) {  
     float dist_squared = apos.distance_to_sqr(bpos);
-    int distSq = (apos.x - bpos.x) * (apos.x - bpos.x) + 
-        (apos.y - bpos.y) * (apos.y - bpos.y);
     int radSumSq = (aradius + bradius) * (aradius + bradius); 
-    if(distSq > radSumSq) return false;
+    if(dist_squared > radSumSq) return false;
     return true;
 } 
 
@@ -186,7 +209,17 @@ void render_planets() {
         rt.position = it.position;
         rt.texture = it.texture;
         rt.size = Vec2(it.radius, it.radius);
-        render_texture(&rt);
+        render_texture(&rt);        
+        
+        for(int i = 0; i < it.connections.num; i++) {
+            render_line(it.position, it.connections[i]->position);
+        }
+    }}}
+}
+
+void update_planets() {
+    For(planets) {
+        if(!it.active_process) continue;        
     }}}
 }
 
@@ -226,7 +259,16 @@ void input_mouse(Vec2 position, int button, bool down) {
     if(down) {
         if(button == SDL_BUTTON_LEFT) {
             int p = find_planet_at_point(mouse_to_world);
-            if(p) selected_planet = p;
+            if(p != -1) {
+                if(selected_planet == -1) {
+                    selected_planet = p;
+                } else {
+                    if(planets[p].active_process) {
+                        planets[selected_planet].connections.append(&planets[p]);
+                        planets[p].connections.append(&planets[selected_planet]);
+                    }
+                }
+            }
             else  selected_planet = -1;
         }
     }
@@ -235,44 +277,32 @@ void input_mouse(Vec2 position, int button, bool down) {
 void input_key(int key, bool down, uint mods) {
 }
 
-void panel_for_planet(Planet *planet) {
-    ui_new_panel(to_ui_pos(planet->position), "Planet");
+void string_for_process(Process *p, char dest[1024]) {
+    For(p->needs) {
+        if(it_index > 0) strcat_s(dest, 1024, " + ");
+        strcat_s(dest, 1024, it.name);
+    }}}
     
-    for(int i = 0; i < planet->num_processes; i++) {
+    strcat_s(dest, 1024, " = ");    
+    strcat_s(dest, 1024, p->produces.name);
+}
+
+void panel_for_planet(Planet *planet) {
+    ui_new_panel(to_ui_pos(planet->position) + Vec2(planet->radius, 0), "Planet");
+    
+    if(planet->active_process) {
         char buffer[1024] = {};
-        
-        Process *p = &planet->processes[i];
-        
-        int needs_num = 0;
-        while(true) {
-            if(!p->needs[needs_num]) break;
-            
-            if(needs_num > 0) strcat_s(buffer, " + ");
-            
-            switch(p->needs[needs_num]) {
-                case RES_PEOPLE: strcat_s(buffer, "people"); break;
-                case RES_ORGANICS: strcat_s(buffer, "organics"); break;
-                case RES_FOOD: strcat_s(buffer, "food"); break;
-                case RES_ROBOTS: strcat_s(buffer, "robots"); break;
-                case RES_ORE: strcat_s(buffer, "ore"); break;
-                case RES_TECH: strcat_s(buffer, "tech"); break;
-            }
-            
-            needs_num++;
-        }
-        
-        strcat_s(buffer, " = ");
-        
-        switch(p->produces) {
-            case RES_PEOPLE: strcat_s(buffer, "people"); break;
-            case RES_ORGANICS: strcat_s(buffer, "organics"); break;
-            case RES_FOOD: strcat_s(buffer, "food"); break;
-            case RES_ROBOTS: strcat_s(buffer, "robots"); break;
-            case RES_ORE: strcat_s(buffer, "ore"); break;
-            case RES_TECH: strcat_s(buffer, "tech"); break;
-        }
-        
+        string_for_process(planet->active_process, buffer);
         ui_label(buffer);
+    } else {
+        for(int i = 0; i < planet->processes.num; i++) {
+            char buffer[1024] = {};
+            Process *p = &planet->processes[i];
+            string_for_process(p, buffer);
+            if(ui_button(buffer)) {
+                planet->active_process = p;
+            }
+        }
     }
     
     ui_end_panel();
@@ -291,26 +321,27 @@ int main() {
     while(running) {
         if(SDL_PollEvent(&event)) {
             ui_process_event(&event);
+            if(!ui_wants_focus) {
+                if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
+                    bool down = (event.type == SDL_MOUSEBUTTONDOWN);
+                    input_mouse(Vec2(event.button.x, event.button.y), event.button.button, down);
+                    if(event.button.button == SDL_BUTTON_MIDDLE) middle_mouse_down = down;
+                } else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+                    int mods = 0;
+                    if(event.key.keysym.mod | KMOD_CTRL)    mods |= KEY_MOD_CTRL;
+                    if(event.key.keysym.mod | KMOD_ALT)     mods |= KEY_MOD_ALT;
+                    if(event.key.keysym.mod | KMOD_SHIFT)   mods |= KEY_MOD_SHIFT;
+                    bool down = (event.type == SDL_KEYDOWN);
+                    input_key(event.key.keysym.scancode, down, mods);
+                } else if(event.type == SDL_MOUSEMOTION) {
+                    Vec2 amount = Vec2(event.motion.xrel, event.motion.yrel);
+                    if(middle_mouse_down) renderer.camera_position = renderer.camera_position - amount;
+                }
+            }
             
             if(event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
                 running = false;
                 break;
-            }
-            
-            if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP) {
-                bool down = (event.type == SDL_MOUSEBUTTONDOWN);
-                input_mouse(Vec2(event.button.x, event.button.y), event.button.button, down);
-                if(event.button.button == SDL_BUTTON_MIDDLE) middle_mouse_down = down;
-            } else if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-                int mods = 0;
-                if(event.key.keysym.mod | KMOD_CTRL)    mods |= KEY_MOD_CTRL;
-                if(event.key.keysym.mod | KMOD_ALT)     mods |= KEY_MOD_ALT;
-                if(event.key.keysym.mod | KMOD_SHIFT)   mods |= KEY_MOD_SHIFT;
-                bool down = (event.type == SDL_KEYDOWN);
-                input_key(event.key.keysym.scancode, down, mods);
-            } else if(event.type == SDL_MOUSEMOTION) {
-                Vec2 amount = Vec2(event.motion.xrel, event.motion.yrel);
-                if(middle_mouse_down) renderer.camera_position = renderer.camera_position - amount;
             }
         } else {
             sys_update();
@@ -322,6 +353,8 @@ int main() {
                 panel_for_planet(p);
             }
             
+            update_planets();
+            
             render_begin_frame();
             
             render_setup_for_world();
@@ -331,6 +364,9 @@ int main() {
             render_planets();
             
             ui_render();
+            
+            debug_string("mouse_position = (%.2f, %.2f)", v2parms(mouse_position));
+            debug_string("ui_wants_focus = %s", ui_wants_focus ? "true" : "false");
             
             render_end_frame();
             

@@ -3,6 +3,8 @@
 #ifndef UI_H
 #define UI_H
 
+extern bool ui_wants_focus;
+
 void ui_init();
 void ui_shutdown();
 
@@ -15,6 +17,7 @@ void ui_new_panel(Vec2 position, const char *title);
 void ui_end_panel();
 
 void ui_label(const char *text);
+bool ui_button(const char *text);
 
 
 #endif //UI_H

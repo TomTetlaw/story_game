@@ -6,6 +6,9 @@ struct Array {
 	T *data = nullptr;
 	int size = 0;
 	int num = 0;
+    
+    Array() {}
+    Array(const Array<T> &other);
 
 	~Array();
 	// make sure the memory is big enough for new_size elements
@@ -27,11 +30,19 @@ struct Array {
 };
 
 #define For(x) { if(x._num() > 0) { auto it = x[0]; for(int it_index = 0; it_index < x._num(); it_index++, it = x[it_index])
-#define Forn(x,y) for(int it = x; it < y; it++) 
+
+template<typename T>
+Array<T>::Array(const Array<T> &other) {
+    data = other.data;
+    size = other.size;
+    num = other.num;
+}
 
 template<typename T>
 Array<T>::~Array() {
-	delete[] data;
+    //@leak: BIG LEAK NEED TO DO array_free(x) FOR ALL ARRAYS NOW,
+    // SO THAT WE CAN PASS THEM AROUND. 
+	//delete[] data;
 }
 
 template<typename T>

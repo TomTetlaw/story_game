@@ -20,7 +20,7 @@ struct Render {
 	int zoom_level = 0;
 
 	bool render_physics_debug = false;
-	bool render_debug_strings = false;
+	bool render_debug_strings = true;
     
     Font *default_font = nullptr;
 };
