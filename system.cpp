@@ -47,8 +47,6 @@ void sys_init() {
     if(!IMG_Init(IMG_INIT_PNG)) sys_error("Failed to initialize SDL_image: %s.", IMG_GetError());
     if(TTF_Init()) sys_error("Failed to initialize SDL_ttf: %s.", TTF_GetError());
 
-    srand(time(0));
-
     hotload_init();
     render_init();
     ui_init();

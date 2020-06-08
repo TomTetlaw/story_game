@@ -32,6 +32,7 @@ struct Resource {
     float amount = 0;
 };
 
+// these instances are copied into the processes
 Resource res_people   = { "People",   RES_PEOPLE,   0.0f };
 Resource res_organics = { "Organics", RES_ORGANICS, 0.0f };
 Resource res_food     = { "Food",     RES_FOOD,     0.0f };
@@ -90,9 +91,11 @@ void setup_planet_for_type(Planet *planet) {
             p1.produces = res_ore;
             
             p2.needs.append(res_people);
+            p2.needs.append(res_ore);
             p2.produces = res_tech;
             
             p3.needs.append(res_robots);
+            p3.needs.append(res_ore);
             p3.produces = res_tech;
             
             planet->processes.append(p0);
@@ -198,6 +201,16 @@ bool circle_point_intersection(Vec2 position, float radius, Vec2 point) {
 
 #define mouse_to_world to_world_pos(mouse_position - (window_size * 0.5f))
 
+void string_for_process(Process *p, char dest[1024]) {
+    For(p->needs) {
+        if(it_index > 0) strcat_s(dest, 1024, " + ");
+        strcat_s(dest, 1024, it.name);
+    }}}
+
+    strcat_s(dest, 1024, " = ");    
+    strcat_s(dest, 1024, p->produces.name);
+}
+
 void render_planets() {
     For(planets) {       
         Vec4 colour = it.colour;
@@ -209,7 +222,18 @@ void render_planets() {
         rt.position = it.position;
         rt.texture = it.texture;
         rt.size = Vec2(it.radius, it.radius);
+        rt.colour = colour;
         render_texture(&rt);        
+        
+        if(it.active_process) {
+            char buffer[1024] = {};
+            string_for_process(it.active_process, buffer);
+            render_string_format_lazy(it.position + Vec2(0, it.radius), "%s = %f", buffer, it.active_process->produces.amount);
+            
+            if(it_index == selected_planet) {
+                render_line(it.position, mouse_to_world);
+            }
+        }
         
         for(int i = 0; i < it.connections.num; i++) {
             render_line(it.position, it.connections[i]->position);
@@ -220,6 +244,21 @@ void render_planets() {
 void update_planets() {
     For(planets) {
         if(!it.active_process) continue;        
+        
+        int needs_met = 0;
+        for(int i = 0; i < it.connections.num; i++) {
+            Planet *p = it.connections[i];
+            Resource_Type type = p->active_process->produces.type;
+            
+            for(int needs_num = 0; needs_num < it.active_process->needs.num; needs_num++) {
+                Resource *r = &it.active_process->needs[needs_num];
+                if(r->type == type) {
+                    needs_met++;
+                }
+            }
+        }
+        
+        it.active_process->produces.amount += (needs_met * delta_time);
     }}}
 }
 
@@ -266,6 +305,7 @@ void input_mouse(Vec2 position, int button, bool down) {
                     if(planets[p].active_process) {
                         planets[selected_planet].connections.append(&planets[p]);
                         planets[p].connections.append(&planets[selected_planet]);
+                        selected_planet = -1;
                     }
                 }
             }
@@ -274,34 +314,34 @@ void input_mouse(Vec2 position, int button, bool down) {
     }
 }
 
-void input_key(int key, bool down, uint mods) {
+int generation_seed = 0;
+
+void generate() {
+    generation_seed = time(0);
+    srand(generation_seed);
+    
+    stars.num = 0;
+    planets.num = 0;
+    selected_planet = -1;
+    
+    generate_stars();
+    generate_planets();
 }
 
-void string_for_process(Process *p, char dest[1024]) {
-    For(p->needs) {
-        if(it_index > 0) strcat_s(dest, 1024, " + ");
-        strcat_s(dest, 1024, it.name);
-    }}}
-    
-    strcat_s(dest, 1024, " = ");    
-    strcat_s(dest, 1024, p->produces.name);
+void input_key(int key, bool down, uint mods) {
+    if(key == SDL_SCANCODE_SPACE && down) generate();
 }
 
 void panel_for_planet(Planet *planet) {
     ui_new_panel(to_ui_pos(planet->position) + Vec2(planet->radius, 0), "Planet");
     
-    if(planet->active_process) {
+    for(int i = 0; i < planet->processes.num; i++) {
         char buffer[1024] = {};
-        string_for_process(planet->active_process, buffer);
-        ui_label(buffer);
-    } else {
-        for(int i = 0; i < planet->processes.num; i++) {
-            char buffer[1024] = {};
-            Process *p = &planet->processes[i];
-            string_for_process(p, buffer);
-            if(ui_button(buffer)) {
-                planet->active_process = p;
-            }
+        Process *p = &planet->processes[i];
+        string_for_process(p, buffer);
+        if(ui_button(buffer)) {
+            planet->active_process = p;
+            selected_planet = -1;
         }
     }
     
@@ -311,8 +351,7 @@ void panel_for_planet(Planet *planet) {
 int main() {
     sys_init();
     
-    generate_stars();
-    generate_planets();
+    generate();
     
     bool middle_mouse_down = false;
     
@@ -350,7 +389,7 @@ int main() {
             
             if(selected_planet != -1) {
                 Planet *p = &planets[selected_planet];
-                panel_for_planet(p);
+                if(!p->active_process) panel_for_planet(p);
             }
             
             update_planets();
@@ -365,9 +404,11 @@ int main() {
             
             ui_render();
             
-            debug_string("mouse_position = (%.2f, %.2f)", v2parms(mouse_position));
-            debug_string("ui_wants_focus = %s", ui_wants_focus ? "true" : "false");
-            
+            render_setup_for_ui();
+            debug_string("mouse_position  = (%.2f, %.2f)", v2parms(mouse_position));
+            debug_string("mouse_to_world  = (%.2f, %.2f)", v2parms(mouse_to_world));
+            debug_string("ui_wants_focus  = %s",           ui_wants_focus ? "true" : "false");
+            debug_string("generation_seed = %d",           generation_seed);
             render_end_frame();
             
             frame_num++;
